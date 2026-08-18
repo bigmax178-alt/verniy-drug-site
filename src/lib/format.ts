@@ -3,6 +3,38 @@ import config from '../../site.config.mjs';
 
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
 
+// Названия дней недели (именительный) → короткое общепринятое сокращение и форма винительного падежа.
+// Нужно для двух разных мест: ярлыки «пн/вт/…» и фразы вида «работает в пятницу, субботу».
+const DAY_ABBR: Record<string, string> = {
+  понедельник: 'пн',
+  вторник: 'вт',
+  среда: 'ср',
+  четверг: 'чт',
+  пятница: 'пт',
+  суббота: 'сб',
+  воскресенье: 'вс',
+};
+const DAY_ACCUSATIVE: Record<string, string> = {
+  понедельник: 'понедельник',
+  вторник: 'вторник',
+  среда: 'среду',
+  четверг: 'четверг',
+  пятница: 'пятницу',
+  суббота: 'субботу',
+  воскресенье: 'воскресенье',
+};
+
+export function dayAbbr(day: string) {
+  return DAY_ABBR[day] || day.slice(0, 2);
+}
+
+/** «понедельник, вторник, пятницу, субботу и воскресенье» — дни в винительном падеже с «и» перед последним. */
+export function daysAccusativeList(days: string[]) {
+  const forms = days.map((d) => DAY_ACCUSATIVE[d] || d);
+  if (forms.length < 2) return forms.join('');
+  return forms.slice(0, -1).join(', ') + ' и ' + forms[forms.length - 1];
+}
+
 export function formatDate(unix: number, { withYear = 'auto' }: { withYear?: boolean | 'auto' } = {}) {
   const d = new Date(unix * 1000);
   const now = new Date();

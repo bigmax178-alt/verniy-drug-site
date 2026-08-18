@@ -9,6 +9,16 @@ import { withBase, vkTextToHtml, formatDate, excerpt } from '../lib/format';
 
 const donationsTopic = topicByKey('donations');
 const d = config.donate.org;
+// Пока VK не подключён, названия тем неизвестны — используем то, что видно в самой группе,
+// чтобы шесть карточек не выглядели одинаковыми заглушками.
+const reportFallbackTitles: Record<number, string> = {
+  49349739: 'Отчёт расходов в чеках с карты Альфа-Банк, 2023–2026',
+  49377362: 'Финансовый отчёт с карты Альфа-Банк, 2023–2026',
+  49169915: 'Отчёт расходов со счёта в чеках, 2023–2026',
+  49169932: 'Финансовый отчёт по расчётному счёту, 2023–2026',
+  49063659: 'Финансовый отчёт по расчётному счёту, 2022',
+  49163065: 'Отчёт расходов со счёта в чеках, 2022',
+};
 const docs = [
   { title: 'Оферта о пожертвовании', href: withBase('/docs/offer/'), note: 'условия, на которых приют принимает помощь' },
   { title: 'Политика обработки персональных данных', href: withBase('/docs/privacy/'), note: '152-ФЗ' },
@@ -37,7 +47,7 @@ const docs = [
         }) : (
           (config.vk.topics.reports as number[]).map((id) => (
             <a class="card card--pad topic" href={`https://vk.com/topic-${config.vk.groupId}_${id}`} target="_blank" rel="noopener">
-              <h3>Финансовый отчёт (обсуждение в группе)</h3>
+              <h3>{reportFallbackTitles[id] || 'Финансовый отчёт (обсуждение в группе)'}</h3>
               <span class="topic__more">Открыть в группе <Icon name="external" size={14} /></span>
             </a>
           ))

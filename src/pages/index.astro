@@ -4,8 +4,8 @@ import config from '../../site.config.mjs';
 import Icon from '../components/Icon.astro';
 import AnimalCard from '../components/AnimalCard.astro';
 import PostCard from '../components/PostCard.astro';
-import { lookingAnimals, dogs, cats, newsPosts, activeCampaigns, stats, animalPhoto, plural } from '../lib/data';
-import { withBase, telHref } from '../lib/format';
+import { lookingAnimals, dogs, cats, newsPosts, activeCampaigns, stats, animalPhoto, animalsSource, plural } from '../lib/data';
+import { withBase, telHref, dayAbbr, daysAccusativeList } from '../lib/format';
 
 const featured = [...lookingAnimals].sort((a, b) => (b.date || 0) - (a.date || 0)).slice(0, 8);
 const heroAnimal = lookingAnimals.find((a) => a.slug.startsWith('ben')) || lookingAnimals[0];
@@ -60,8 +60,11 @@ const members = new Intl.NumberFormat('ru-RU').format(stats.members);
       <div class="section-head">
         <div>
           <div class="eyebrow">Ищут дом</div>
-          <h2>{dogs.length} {plural(dogs.length, 'собака', 'собаки', 'собак')} и {cats.length} {plural(cats.length, 'кошка', 'кошки', 'кошек')} с историей</h2>
-          <p>Каждого можно навестить в приёмный день, стать опекуном или забрать домой по договору.</p>
+          <h2>{animalsSource === 'seed' ? 'Собаки и кошки' : `${dogs.length} ${plural(dogs.length, 'собака', 'собаки', 'собак')} и ${cats.length} ${plural(cats.length, 'кошка', 'кошки', 'кошек')}`} с историей</h2>
+          <p>
+            Каждого можно навестить в приёмный день, стать опекуном или забрать домой по договору.
+            {animalsSource === 'seed' && <> Ниже — первые {dogs.length + cats.length} из {stats.dogs + stats.cats}: полный список актуален в группе, пока сайт не подключён к ВКонтакте.</>}
+          </p>
         </div>
         <a class="btn btn--ghost btn--sm" href={withBase('/animals/')}>Смотреть всех <Icon name="arrow" size={16} /></a>
       </div>
@@ -123,8 +126,8 @@ const members = new Intl.NumberFormat('ru-RU').format(stats.members);
     <div class="container visit">
       <div class="visit__text">
         <div class="eyebrow">Приехать в гости</div>
-        <h2>Приёмные дни: {config.visitingDays.open.map((d) => d.slice(0, 2)).join(', ')}</h2>
-        <p>Приют работает для гостей в {config.visitingDays.open.join(', ')}. {config.visitingDays.note}</p>
+        <h2>Приёмные дни: {config.visitingDays.open.map(dayAbbr).join(', ')}</h2>
+        <p>Приют работает для гостей в {daysAccusativeList(config.visitingDays.open)}. {config.visitingDays.note}</p>
         <div class="row">
           {config.contacts.slice(0, 2).map((c) => (
             <a class="btn btn--green" href={telHref(c.tel)}><Icon name="phone" size={16} /> {c.phone} · {c.name}</a>
@@ -135,7 +138,7 @@ const members = new Intl.NumberFormat('ru-RU').format(stats.members);
       <div class="visit__days" aria-label="График">
         {['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье'].map((d) => (
           <span class:list={['visit__day', { 'visit__day--open': config.visitingDays.open.includes(d) }]}>
-            <b>{d.slice(0, 2)}</b>
+            <b>{dayAbbr(d)}</b>
             <small>{config.visitingDays.open.includes(d) ? 'приём' : 'закрыто'}</small>
           </span>
         ))}

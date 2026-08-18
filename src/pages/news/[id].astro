@@ -29,10 +29,12 @@ const ld = {
       <a class="back" href={withBase('/news/')}><Icon name="arrow" size={16} class="flip" /> Все новости</a>
       <h1 class="post-title">{title}</h1>
       <PostCard post={p} full />
-      <div class="pager">
-        {next ? <a href={withBase(`/news/${next.id}/`)}>← Раньше: {excerpt(next.title || next.text, 50)}</a> : <span />}
-        {prev ? <a href={withBase(`/news/${prev.id}/`)}>Позже: {excerpt(prev.title || prev.text, 50)} →</a> : <span />}
-      </div>
+      {(prev || next) && (
+        <div class="pager">
+          {next ? <a href={withBase(`/news/${next.id}/`)}>← Раньше: {excerpt(next.title || next.text, 50)}</a> : <span />}
+          {prev ? <a href={withBase(`/news/${prev.id}/`)}>Позже: {excerpt(prev.title || prev.text, 50)} →</a> : <span />}
+        </div>
+      )}
       <div class="card card--pad card--amber cta">
         <h3>Понравилось, как живёт приют? Помогите ему жить дальше</h3>
         <p class="small">Каждое пожертвование — это корм, лечение и тёплый вольер. Можно за минуту, по QR-коду.</p>
