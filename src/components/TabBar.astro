@@ -1,0 +1,79 @@
+---
+import Icon from './Icon.astro';
+import { withBase } from '../lib/format';
+
+const items = [
+  { href: '/', label: 'Главная', icon: 'home' },
+  { href: '/animals/', label: 'Ищут дом', icon: 'paw' },
+  { href: '/help/', label: 'Помочь', icon: 'heart', primary: true },
+  { href: '/news/', label: 'Новости', icon: 'news' },
+  { href: '/about/', label: 'О приюте', icon: 'map' },
+] as const;
+const path = Astro.url.pathname;
+const isActive = (href: string) => (href === '/' ? path === withBase('/') : path.startsWith(withBase(href)));
+---
+<nav class="tabbar" aria-label="Меню для телефона">
+  {items.map((it) => (
+    <a href={withBase(it.href)} class:list={['tabbar__item', { 'tabbar__item--primary': 'primary' in it && it.primary }]} aria-current={isActive(it.href) ? 'page' : undefined}>
+      <span class="tabbar__icon"><Icon name={it.icon} size={22} /></span>
+      <span>{it.label}</span>
+    </a>
+  ))}
+</nav>
+
+<style>
+  .tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabbar__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 4px 7px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-decoration: none;
+    min-height: 60px;
+    justify-content: center;
+  }
+  .tabbar__item[aria-current='page'] {
+    color: var(--green);
+  }
+  .tabbar__icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 28px;
+    border-radius: 999px;
+  }
+  .tabbar__item[aria-current='page'] .tabbar__icon {
+    background: var(--green-soft);
+  }
+  .tabbar__item--primary {
+    color: var(--amber-dark);
+  }
+  .tabbar__item--primary .tabbar__icon {
+    background: var(--amber);
+    color: #fff;
+    width: 44px;
+    height: 30px;
+  }
+  @media (min-width: 900px) {
+    .tabbar {
+      display: none;
+    }
+  }
+</style>

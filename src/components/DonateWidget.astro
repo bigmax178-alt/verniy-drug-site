@@ -1,0 +1,503 @@
+---
+import config from '../../site.config.mjs';
+import Icon from './Icon.astro';
+import { market, topicByKey } from '../lib/data';
+import { withBase, rub } from '../lib/format';
+
+interface Props {
+  compact?: boolean;
+}
+const { compact = false } = Astro.props;
+const d = config.donate;
+const cpEnabled = Boolean(d.cloudpayments.publicId);
+const donationProducts = market?.donationProducts || [];
+const donationsTopic = topicByKey('donations');
+const requisitesTopic = topicByKey('requisites');
+const requisitesText = [
+  `Получатель: ${d.org.name}`,
+  `ИНН ${d.org.inn}, КПП ${d.org.kpp}`,
+  `Р/с ${d.org.account}`,
+  `Банк: ${d.org.bank}, БИК ${d.org.bik}`,
+  `К/с ${d.org.corrAccount}`,
+  `Назначение: ${d.org.purpose}`,
+].join('\n');
+const cardPretty = d.card.number.replace(/(\d{4})(?=\d)/g, '$1 ');
+const thanksUrl = withBase('/thanks/');
+---
+<section id="donate" class:list={['donate', { 'donate--compact': compact }]} data-cp={cpEnabled ? d.cloudpayments.publicId : ''} data-thanks={thanksUrl} data-external={d.externalPayUrl || ''}>
+  <div class="donate__form card">
+    <div class="donate__top">
+      <div>
+        <div class="eyebrow">Пожертвование</div>
+        <h2 class="donate__title">Помочь деньгами</h2>
+        <p class="muted donate__sub">Приют живёт на пожертвования: корм, ветеринар, стройматериалы для вольеров, бензин до Первомайского. Каждый перевод — на счёт АНО, отчёты публикуются в группе.</p>
+      </div>
+    </div>
+
+    <div class="donate__mode" role="tablist" aria-label="Периодичность">
+      <button type="button" class="donate__mode-btn" role="tab" aria-selected="true" data-mode="once">Разово</button>
+      <button type="button" class="donate__mode-btn" role="tab" aria-selected="false" data-mode="monthly"><Icon name="repeat" size={16} /> Ежемесячно</button>
+    </div>
+    <p class="donate__monthly-note small" hidden>Регулярная помощь — самое ценное для приюта: с ней можно планировать корм и лечение. Отменить можно в любой момент.</p>
+
+    <div class="donate__amounts" role="group" aria-label="Сумма">
+      {d.presets.map((p, i) => (
+        <button type="button" class="donate__amount" data-amount={p.amount} data-label={p.label} aria-pressed={i === 1 ? 'true' : 'false'}>{rub(p.amount)}</button>
+      ))}
+      <label class="donate__custom">
+        <span class="visually-hidden">Своя сумма</span>
+        <input type="number" inputmode="numeric" min="10" step="10" placeholder="Своя сумма" aria-label="Своя сумма, рублей" />
+        <span>₽</span>
+      </label>
+    </div>
+    <p class="donate__equiv small"><Icon name="paw" size={14} /> <span data-equiv>{d.presets[1].amount} ₽ — {d.presets[1].label}</span></p>
+
+    <div class="donate__guardian" hidden>
+      <Icon name="heart" size={16} /> Опекунство над <strong data-guardian-name></strong> — <span data-guardian-sum>{rub(d.guardianshipMonthly)}</span> в месяц.
+      <a href={withBase('/help/#guardianship')}>Условия</a>
+    </div>
+
+    <label class="donate__email" hidden>
+      <span class="small muted">Эл. почта для чека и управления подпиской</span>
+      <input type="email" name="email" placeholder="you@example.ru" autocomplete="email" />
+    </label>
+
+    <button type="button" class="btn btn--primary btn--lg btn--block donate__pay" data-pay>
+      <Icon name="heart" size={18} /> <span data-pay-label>Пожертвовать {rub(d.presets[1].amount)}</span>
+    </button>
+    <p class="donate__legal small muted">
+      Нажимая кнопку, вы соглашаетесь с <a href={withBase('/docs/offer/')}>офертой</a> и <a href={withBase('/docs/privacy/')}>обработкой персональных данных</a>.
+      {!cpEnabled && <span> Оплата картой прямо на сайте появится после подключения эквайринга; пока — по QR-коду или реквизитам ниже (это две минуты).</span>}
+    </p>
+  </div>
+
+  <div class="donate__methods">
+    <div class="donate__method card card--pad" id="qr">
+      <div class="donate__method-head">
+        <span class="donate__method-icon"><Icon name="qr" size={20} /></span>
+        <div>
+          <h3>По QR-коду из приложения банка</h3>
+          <p class="muted small">Откройте приложение своего банка, «Оплата по QR», наведите камеру — реквизиты АНО подставятся сами. Работает в Сбере, Т-Банке, Альфе, ВТБ и других.</p>
+        </div>
+      </div>
+      <div class="donate__qr">
+        <img src={withBase(d.qrImage)} alt="QR-код для перевода на счёт АНО «Приют для бездомных животных «Верный Друг»" width="260" height="260" loading="lazy" />
+        <div class="stack">
+          <a class="btn btn--ghost btn--sm" href={withBase(d.qrImage)} download="verniy-drug-qr.jpg"><Icon name="qr" size={16} /> Сохранить QR</a>
+          {requisitesTopic && <a class="small" href={requisitesTopic.url} target="_blank" rel="noopener">Инструкции с картинками для Сбера и Т-Банка →</a>}
+        </div>
+      </div>
+    </div>
+
+    <div class="donate__method card card--pad" id="sbp">
+      <div class="donate__method-head">
+        <span class="donate__method-icon"><Icon name="phone" size={20} /></span>
+        <div>
+          <h3>СБП по номеру телефона</h3>
+          <p class="muted small">В приложении банка: «Перевод по номеру телефона» → выберите {d.sbpPhone.bank}. Получатель — Анастасия С., куратор приюта.</p>
+        </div>
+      </div>
+      <div class="copy-field">
+        <div><div class="copy-field__label">Телефон для СБП</div><div class="copy-field__value">{d.sbpPhone.phone}</div></div>
+        <button class="copy-btn" type="button" data-copy={d.sbpPhone.digits}>Скопировать</button>
+      </div>
+      <div class="copy-field">
+        <div><div class="copy-field__label">Карта {d.card.bank} · {d.card.holder}</div><div class="copy-field__value">{cardPretty}</div></div>
+        <button class="copy-btn" type="button" data-copy={d.card.number}>Скопировать</button>
+      </div>
+    </div>
+
+    <div class="donate__method card card--pad" id="requisites">
+      <div class="donate__method-head">
+        <span class="donate__method-icon"><Icon name="shield" size={20} /></span>
+        <div>
+          <h3>По реквизитам на счёт АНО</h3>
+          <p class="muted small">Для перевода из банка, от организации или через бухгалтерию. Назначение платежа — только «Благотворительный взнос»: так просит приют, чтобы отчётность сходилась.</p>
+        </div>
+      </div>
+      <div class="req-grid">
+        <div class="copy-field"><div><div class="copy-field__label">Получатель</div><div class="copy-field__value">{d.org.name}</div></div><button class="copy-btn" type="button" data-copy={d.org.name}>Скопировать</button></div>
+        <div class="copy-field"><div><div class="copy-field__label">Расчётный счёт</div><div class="copy-field__value">{d.org.account}</div></div><button class="copy-btn" type="button" data-copy={d.org.account}>Скопировать</button></div>
+        <div class="copy-field"><div><div class="copy-field__label">ИНН / КПП</div><div class="copy-field__value">{d.org.inn} / {d.org.kpp}</div></div><button class="copy-btn" type="button" data-copy={d.org.inn}>ИНН</button></div>
+        <div class="copy-field"><div><div class="copy-field__label">Банк · БИК</div><div class="copy-field__value">{d.org.bank} · {d.org.bik}</div></div><button class="copy-btn" type="button" data-copy={d.org.bik}>БИК</button></div>
+        <div class="copy-field"><div><div class="copy-field__label">Корр. счёт</div><div class="copy-field__value">{d.org.corrAccount}</div></div><button class="copy-btn" type="button" data-copy={d.org.corrAccount}>Скопировать</button></div>
+        <div class="copy-field"><div><div class="copy-field__label">Назначение платежа</div><div class="copy-field__value">{d.org.purpose}</div></div><button class="copy-btn" type="button" data-copy="Благотворительный взнос. НДС не облагается.">Скопировать</button></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn btn--soft btn--sm" type="button" data-copy={requisitesText}><Icon name="copy" size={16} /> Скопировать все реквизиты</button>
+        <span class="small muted">ОГРН {d.org.ogrn}</span>
+      </div>
+    </div>
+
+    {(donationProducts.length > 0 || donationsTopic) && (
+      <div class="donate__method card card--pad card--soft" id="vk-pay">
+        <div class="donate__method-head">
+          <span class="donate__method-icon"><Icon name="vk" size={20} /></span>
+          <div>
+            <h3>Через ВКонтакте</h3>
+            <p class="muted small">
+              {donationProducts.length > 0 ? 'В «Товарах» группы есть пожертвование как товар — оплата в пару кликов через VK Pay. ' : ''}
+              После перевода приют просит отписаться в обсуждении «Пожертвования приюту» — так они сводят отчёт.
+            </p>
+          </div>
+        </div>
+        <div class="row">
+          {donationProducts.map((p) => (
+            <a class="btn btn--green btn--sm" href={p.url} target="_blank" rel="noopener">{p.title}{p.price ? ` · ${p.price}` : ''}</a>
+          ))}
+          {donationsTopic && <a class="btn btn--ghost btn--sm" href={donationsTopic.url} target="_blank" rel="noopener">Отписаться о переводе</a>}
+        </div>
+      </div>
+    )}
+  </div>
+</section>
+
+<script>
+  // Логика виджета пожертвований: сумма, периодичность, опекунство из URL, оплата.
+  const root = document.getElementById('donate') as HTMLElement | null;
+  if (root) {
+    const publicId = root.dataset.cp || '';
+    const externalUrl = root.dataset.external || '';
+    const thanksUrl = root.dataset.thanks || '/thanks/';
+    const modeBtns = [...root.querySelectorAll<HTMLButtonElement>('.donate__mode-btn')];
+    const amountBtns = [...root.querySelectorAll<HTMLButtonElement>('.donate__amount')];
+    const custom = root.querySelector<HTMLInputElement>('.donate__custom input')!;
+    const equiv = root.querySelector<HTMLElement>('[data-equiv]')!;
+    const payLabel = root.querySelector<HTMLElement>('[data-pay-label]')!;
+    const payBtn = root.querySelector<HTMLButtonElement>('[data-pay]')!;
+    const monthlyNote = root.querySelector<HTMLElement>('.donate__monthly-note')!;
+    const emailWrap = root.querySelector<HTMLElement>('.donate__email')!;
+    const emailInput = emailWrap.querySelector<HTMLInputElement>('input')!;
+    const guardianBox = root.querySelector<HTMLElement>('.donate__guardian')!;
+    const guardianName = root.querySelector<HTMLElement>('[data-guardian-name]')!;
+
+    const fmt = (n: number) => new Intl.NumberFormat('ru-RU').format(n) + ' ₽';
+    let mode: 'once' | 'monthly' = 'once';
+    let amount = Number(amountBtns.find((b) => b.getAttribute('aria-pressed') === 'true')?.dataset.amount || 500);
+    let guardian = '';
+
+    function render() {
+      payLabel.textContent = (mode === 'monthly' ? 'Помогать ' : 'Пожертвовать ') + fmt(amount) + (mode === 'monthly' ? ' в месяц' : '');
+      const preset = amountBtns.find((b) => Number(b.dataset.amount) === amount);
+      equiv.textContent = preset ? `${fmt(amount)} — ${preset.dataset.label}` : `${fmt(amount)} — спасибо, это ощутимая помощь`;
+      monthlyNote.hidden = mode !== 'monthly';
+      emailWrap.hidden = !(publicId && mode === 'monthly');
+      modeBtns.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.mode === mode)));
+      amountBtns.forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.amount) === amount)));
+    }
+
+    modeBtns.forEach((b) =>
+      b.addEventListener('click', () => {
+        mode = b.dataset.mode as typeof mode;
+        render();
+      }),
+    );
+    amountBtns.forEach((b) =>
+      b.addEventListener('click', () => {
+        amount = Number(b.dataset.amount);
+        custom.value = '';
+        render();
+      }),
+    );
+    custom.addEventListener('input', () => {
+      const v = Math.max(0, Math.floor(Number(custom.value)));
+      if (v > 0) {
+        amount = v;
+        render();
+      }
+    });
+
+    // /help/?guardian=Бен → ежемесячно 1500 ₽ и пометка «опекунство».
+    const params = new URLSearchParams(location.search);
+    const g = params.get('guardian');
+    if (g) {
+      guardian = g.slice(0, 60);
+      guardianName.textContent = guardian;
+      guardianBox.hidden = false;
+      mode = 'monthly';
+      amount = Number(root.querySelector<HTMLElement>('[data-guardian-sum]')?.textContent?.replace(/\D/g, '') || 1500);
+      custom.value = '';
+    }
+    render();
+
+    function track(goal: string) {
+      try {
+        (window as any).ym && (window as any).ym((window as any).__ym, 'reachGoal', goal);
+      } catch {}
+    }
+
+    function loadCp(): Promise<any> {
+      return new Promise((resolve, reject) => {
+        if ((window as any).cp) return resolve((window as any).cp);
+        const s = document.createElement('script');
+        s.src = 'https://widget.cloudpayments.ru/bundles/cloudpayments.js';
+        s.onload = () => resolve((window as any).cp);
+        s.onerror = () => reject(new Error('cp load failed'));
+        document.head.appendChild(s);
+      });
+    }
+
+    payBtn.addEventListener('click', async () => {
+      track('donate_click');
+      if (amount < 10) {
+        custom.focus();
+        return;
+      }
+      if (publicId) {
+        if (mode === 'monthly' && !emailInput.value.includes('@')) {
+          emailInput.focus();
+          emailInput.reportValidity?.();
+          emailWrap.classList.add('is-error');
+          return;
+        }
+        payBtn.disabled = true;
+        try {
+          const cp = await loadCp();
+          const widget = new cp.CloudPayments({ language: 'ru-RU' });
+          const data: any = { site: location.host, purpose: guardian ? 'guardianship' : 'donation' };
+          if (guardian) data.animal = guardian;
+          if (mode === 'monthly') data.CloudPayments = { recurrent: { interval: 'Month', period: 1, amount } };
+          widget.pay(
+            'charge',
+            {
+              publicId,
+              description: 'Благотворительный взнос. НДС не облагается.',
+              amount,
+              currency: 'RUB',
+              accountId: emailInput.value || undefined,
+              email: emailInput.value || undefined,
+              skin: 'mini',
+              autoClose: 3,
+              data,
+            },
+            {
+              onSuccess: () => {
+                track(mode === 'monthly' ? 'donate_monthly_success' : 'donate_success');
+                location.href = thanksUrl + '?a=' + amount + (mode === 'monthly' ? '&m=1' : '') + (guardian ? '&g=' + encodeURIComponent(guardian) : '');
+              },
+              onFail: () => {
+                payBtn.disabled = false;
+              },
+              onComplete: () => {
+                payBtn.disabled = false;
+              },
+            },
+          );
+        } catch {
+          payBtn.disabled = false;
+          alert('Не удалось открыть форму оплаты. Пожалуйста, воспользуйтесь QR-кодом или реквизитами ниже.');
+        }
+        return;
+      }
+      if (externalUrl) {
+        window.open(externalUrl, '_blank', 'noopener');
+        return;
+      }
+      // Эквайринг ещё не подключён: ведём к QR и подсвечиваем.
+      const qr = document.getElementById('qr');
+      qr?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      qr?.classList.add('is-highlight');
+      setTimeout(() => qr?.classList.remove('is-highlight'), 2500);
+    });
+  }
+</script>
+
+<style>
+  .donate {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: 1fr;
+    scroll-margin-top: calc(var(--header-h) + 12px);
+  }
+  @media (min-width: 960px) {
+    .donate {
+      grid-template-columns: minmax(360px, 440px) 1fr;
+      align-items: start;
+    }
+    .donate__form {
+      position: sticky;
+      top: calc(var(--header-h) + 16px);
+    }
+  }
+  .donate__form {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    border-color: transparent;
+    box-shadow: var(--shadow);
+  }
+  .donate__title {
+    font-size: 1.7rem;
+  }
+  .donate__sub {
+    margin-top: 6px;
+  }
+  .donate__mode {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 4px;
+    background: var(--surface-2);
+    border-radius: 12px;
+  }
+  .donate__mode-btn {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    padding: 10px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    font: 700 0.95rem var(--font-body);
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .donate__mode-btn[aria-selected='true'] {
+    background: var(--surface);
+    color: var(--green);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  .donate__monthly-note {
+    margin: -6px 0 0;
+    color: var(--green);
+  }
+  .donate__amounts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .donate__amount,
+  .donate__custom {
+    min-height: 48px;
+    border-radius: 12px;
+    border: 1.5px solid var(--line);
+    background: var(--surface);
+    font: 700 1.02rem var(--font-body);
+    color: var(--ink);
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+  }
+  .donate__amount[aria-pressed='true'] {
+    border-color: var(--green);
+    background: var(--green-soft);
+    color: var(--green);
+  }
+  .donate__custom {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 4px;
+    grid-column: span 1;
+  }
+  .donate__custom input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    font: 700 1.02rem var(--font-body);
+    color: var(--ink);
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  .donate__custom input::-webkit-outer-spin-button,
+  .donate__custom input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+  }
+  .donate__custom:focus-within {
+    border-color: var(--green);
+  }
+  .donate__equiv {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--ink-2);
+    margin: -4px 0 0;
+  }
+  .donate__guardian {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--amber-soft);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.95rem;
+  }
+  .donate__email {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .donate__email input {
+    padding: 11px 12px;
+    border-radius: 10px;
+    border: 1.5px solid var(--line);
+    font: 1rem var(--font-body);
+  }
+  .donate__email.is-error input {
+    border-color: var(--rose);
+  }
+  .donate__legal {
+    margin: 0;
+  }
+  .donate__methods {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .donate__method {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-margin-top: calc(var(--header-h) + 12px);
+    transition: box-shadow 0.3s;
+  }
+  .donate__method.is-highlight {
+    box-shadow: 0 0 0 3px var(--amber);
+  }
+  .donate__method-head {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+  .donate__method-head h3 {
+    font-size: 1.15rem;
+    margin-bottom: 4px;
+  }
+  .donate__method-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--green-soft);
+    color: var(--green);
+    display: grid;
+    place-items: center;
+  }
+  .donate__qr {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .donate__qr img {
+    width: 200px;
+    height: 200px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #fff;
+    object-fit: contain;
+  }
+  .req-grid {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 700px) {
+    .req-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>

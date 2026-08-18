@@ -1,0 +1,227 @@
+---
+import Base from '../layouts/Base.astro';
+import config from '../../site.config.mjs';
+import Icon from '../components/Icon.astro';
+import { group, stats, seedPages, topicByKey, sectionText, albums } from '../lib/data';
+import { withBase, vkTextToHtml, telHref, formatDate } from '../lib/format';
+
+const description = group?.description || config.aboutFallback;
+const schedule = sectionText('schedule');
+const placeText = (seedPages?.place?.text || '').replace(/^[\s\S]*?(?=Как добраться)/, '').replace(/^Как добраться:\s*/, '');
+const faq = topicByKey('faq');
+const faqItems = faq ? faq.comments.filter((c) => /\?/.test(c.text) && !c.isAdmin).slice(0, 8) : [];
+const mapUrl = `https://yandex.ru/maps/?text=${encodeURIComponent('посёлок Первомайское Выборгский район Ленинградская область')}`;
+const photoAlbums = albums.filter((a: any) => a.size > 3).slice(0, 6);
+---
+<Base title="О приюте" description={`${config.fullName}: как устроен приют, кто им занимается, приёмные дни, как добраться и контакты.`}>
+  <section class="section section--tight">
+    <div class="container about">
+      <div class="about__text">
+        <div class="eyebrow">О приюте</div>
+        <h1>Частный приют в лесу под Первомайским, который держится на нескольких людях</h1>
+        <div class="prose" set:html={vkTextToHtml(description)} />
+        <div class="row" style="margin-top:8px">
+          <a class="btn btn--primary" href={withBase('/help/#donate')}><Icon name="heart" size={16} /> Помочь</a>
+          <a class="btn btn--ghost" href={config.vk.url} target="_blank" rel="noopener"><Icon name="vk" size={16} /> Группа ВКонтакте</a>
+        </div>
+      </div>
+      <aside class="about__facts">
+        <div class="fact"><b>{stats.since}</b><span>год основания</span></div>
+        <div class="fact"><b>{stats.dogs}</b><span>собак сейчас</span></div>
+        <div class="fact"><b>{stats.cats}</b><span>кошек сейчас</span></div>
+        <div class="fact"><b>{stats.adopted}+</b><span>нашли дом</span></div>
+        <div class="fact"><b>{new Intl.NumberFormat('ru-RU').format(stats.members)}</b><span>подписчиков в VK</span></div>
+        <div class="fact"><b>АНО</b><span>некоммерческая организация, есть счёт</span></div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section section--alt" id="visit">
+    <div class="container two-col">
+      <div>
+        <div class="eyebrow">Приехать</div>
+        <h2>Приёмные дни и как добраться</h2>
+        <div class="days">
+          {['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье'].map((d) => (
+            <span class:list={['day', { 'day--open': config.visitingDays.open.includes(d) }]}>{d}</span>
+          ))}
+        </div>
+        <p class="muted small">{config.visitingDays.note}</p>
+        {schedule.text && <div class="prose small notice notice--green" set:html={vkTextToHtml(schedule.text, { maxParagraphs: 2 })} />}
+        <div class="prose" style="margin-top:14px">
+          {placeText ? <div set:html={vkTextToHtml(placeText)} /> : (
+            <p>Приют расположен в лесу недалеко от посёлка Первомайское Выборгского района. Добраться можно на машине, предварительно созвонившись — приют вышлет точные координаты. Если машины нет, по договорённости можно доехать с автоволонтёром от метро Девяткино.</p>
+          )}
+        </div>
+        <div class="row" style="margin-top:14px">
+          <a class="btn btn--ghost" href={mapUrl} target="_blank" rel="noopener"><Icon name="map" size={16} /> Первомайское на карте</a>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card card--pad">
+          <h3 style="margin-bottom:10px">Контакты</h3>
+          <div class="contacts">
+            {config.contacts.map((c) => (
+              <a class="contact" href={telHref(c.tel)}>
+                <span class="contact__icon"><Icon name="phone" size={18} /></span>
+                <span><b>{c.phone}</b><br /><span class="muted small">{c.name}, {c.role}{c.whatsapp ? ' · WhatsApp' : ''}</span></span>
+              </a>
+            ))}
+            <a class="contact" href={config.vk.url} target="_blank" rel="noopener">
+              <span class="contact__icon"><Icon name="vk" size={18} /></span>
+              <span><b>vk.com/{config.vk.screenName}</b><br /><span class="muted small">сообщения группы — самый быстрый способ</span></span>
+            </a>
+          </div>
+        </div>
+        <div class="card card--pad card--soft">
+          <h3 style="margin-bottom:6px">Адрес</h3>
+          <p>{config.location}. Точное место — по телефону: приют в лесу, и так спокойнее и животным, и людям.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {photoAlbums.length > 0 && (
+    <section class="section">
+      <div class="container">
+        <div class="section-head"><div><div class="eyebrow">Фото</div><h2>Альбомы группы</h2></div></div>
+        <div class="grid grid--3">
+          {photoAlbums.map((a: any) => (
+            <a class="album card" href={a.url} target="_blank" rel="noopener">
+              {a.cover && <div class="ratio ratio--4x3"><img src={a.cover} alt="" loading="lazy" /></div>}
+              <div class="album__body"><b>{a.title}</b><span class="muted small">{a.size} фото</span></div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <section class="section section--alt">
+    <div class="container narrow">
+      <div class="eyebrow">Вопросы</div>
+      <h2>Частые вопросы</h2>
+      <details class="faq"><summary>Можно ли просто приехать посмотреть животных?</summary><div>Да, в приёмные дни ({config.visitingDays.open.join(', ')}), но обязательно позвоните заранее — приют в лесу, координаты дают по телефону, и нужно, чтобы кто-то вас встретил.</div></details>
+      <details class="faq"><summary>Куда лучше переводить деньги — на карту или на счёт АНО?</summary><div>Приют публикует оба варианта. Перевод на счёт АНО (по QR-коду или реквизитам) идёт напрямую организации и попадает в официальные отчёты; карта и СБП по номеру — быстрее с телефона. В назначении платежа приют просит писать только «Благотворительный взнос».</div></details>
+      <details class="faq"><summary>Как узнать, что деньги дошли и на что потрачены?</summary><div>В группе есть обсуждения с чеками и движениями по счёту, а после сборов приют публикует пост с подтверждением. Всё это собрано в разделе <a href={withBase('/reports/')}>«Отчёты»</a>.</div></details>
+      <details class="faq"><summary>Отдаёте ли животных за пределы Петербурга и области?</summary><div>Нет: приют отвозит животное в новый дом сам, чтобы видеть условия, и заключает договор — поэтому только собственное жильё в СПб или Ленобласти.</div></details>
+      <details class="faq"><summary>Что значит «опекунство»?</summary><div>{new Intl.NumberFormat('ru-RU').format(config.donate.guardianshipMonthly)} ₽ в месяц за конкретное животное: его корм, лечение и уход. Опекун получает фото, может приезжать гулять, а на вольере вешают табличку с его именем. Подробнее — <a href={withBase('/help/#guardianship')}>в разделе «Как помочь»</a>.</div></details>
+      {faqItems.map((c) => (
+        <details class="faq"><summary>{c.text.split('\n')[0].slice(0, 120)}</summary><div><span class="muted small">Вопрос из обсуждения группы, {formatDate(c.date, { withYear: true })}. </span><a href={faq!.url} target="_blank" rel="noopener">Ответ приюта в теме →</a></div></details>
+      ))}
+    </div>
+  </section>
+</Base>
+
+<style>
+  .about {
+    display: grid;
+    gap: 28px;
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  @media (min-width: 900px) {
+    .about {
+      grid-template-columns: 1.3fr 0.7fr;
+    }
+  }
+  .about__text {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .about__facts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .fact {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+  }
+  .fact b {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    color: var(--green);
+    line-height: 1.1;
+  }
+  .fact span {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .two-col {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  @media (min-width: 900px) {
+    .two-col {
+      grid-template-columns: 1.1fr 0.9fr;
+    }
+  }
+  .two-col h2 {
+    margin: 6px 0 14px;
+  }
+  .days {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .day {
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-decoration: line-through;
+  }
+  .day--open {
+    background: var(--green);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .contacts {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .contact {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    align-items: center;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .contact__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--green-soft);
+    color: var(--green);
+    display: grid;
+    place-items: center;
+  }
+  .album {
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .album__body {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+  }
+  .narrow {
+    max-width: 760px;
+  }
+  .narrow h2 {
+    margin-bottom: 12px;
+  }
+</style>

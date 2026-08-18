@@ -1,0 +1,227 @@
+---
+import Base from '../../layouts/Base.astro';
+import config from '../../../site.config.mjs';
+import Icon from '../../components/Icon.astro';
+import AnimalCard from '../../components/AnimalCard.astro';
+import { animals, lookingAnimals, ageOf, animalPhoto, type Photo } from '../../lib/data';
+import { withBase, vkTextToHtml, telHref, rub } from '../../lib/format';
+
+export function getStaticPaths() {
+  return animals.map((a) => ({ params: { slug: a.slug }, props: { animal: a } }));
+}
+const { animal: a } = Astro.props;
+const photos = a.photos as Photo[];
+const main = animalPhoto(a);
+const age = ageOf(a);
+const kindWord = a.kind === 'cat' ? (a.count > 1 ? 'кошки' : 'кошка') : a.count > 1 ? 'собаки' : 'собака';
+const sexWord = a.count > 1 ? (a.sex === 'f' ? 'девочки' : a.sex === 'm' ? 'мальчики' : null) : a.sex === 'f' ? 'девочка' : a.sex === 'm' ? 'мальчик' : null;
+const verb = a.count > 1 ? 'ищут' : 'ищет';
+const others = lookingAnimals.filter((x) => x.id !== a.id && x.kind === a.kind).slice(0, 4);
+const head = config.contacts[0];
+const descr = a.description ? a.description.split('\n')[0].slice(0, 150) : `${a.name} из приюта «Верный друг» ${verb} дом.`;
+const ld = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: `${a.name} ${verb} дом`,
+  image: main?.src,
+  description: descr,
+  author: { '@type': 'Organization', name: config.legalName },
+};
+---
+<Base title={`${a.name} ${verb} дом`} description={descr} image={main?.src || null} type="article" jsonLd={ld}>
+  <article class="animal">
+    <div class="container animal__grid">
+      <div class="animal__gallery">
+        {main && (
+          <a class="animal__main ratio ratio--4x3" href={main.src} target="_blank" rel="noopener">
+            <img src={main.src} alt={`${a.name}, ${kindWord} из приюта`} width={main.w || 800} height={main.h || 600} fetchpriority="high" decoding="async" id="mainPhoto" />
+          </a>
+        )}
+        {photos.length > 1 && (
+          <div class="animal__thumbs">
+            {photos.map((p, i) => (
+              <button type="button" class="animal__thumb" data-src={p.src} aria-pressed={i === 0 ? 'true' : 'false'} aria-label={`Фото ${i + 1}`}>
+                <img src={p.thumb || p.src} alt="" loading="lazy" decoding="async" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div class="animal__info">
+        <div class="pill pill--green" style="align-self:flex-start"><Icon name={a.kind === 'cat' ? 'cat' : 'dog'} size={14} /> {kindWord} · {verb} дом</div>
+        <h1>{a.name}</h1>
+        <div class="animal__facts">
+          {sexWord && <span><b>Пол</b>{sexWord}</span>}
+          {age && <span><b>Возраст</b>{age}{a.birthYear ? ` (${a.birthYear} г. р.)` : ''}</span>}
+          {a.status === 'looking' && <span><b>Статус</b>в приюте, {verb} семью</span>}
+        </div>
+        {a.traits.length > 0 && (
+          <div class="row" style="gap:6px">
+            {a.traits.map((t) => <span class="pill">{t}</span>)}
+          </div>
+        )}
+        <div class="prose animal__desc" set:html={a.description ? vkTextToHtml(a.description) : '<p class="muted">Приют пока не написал историю — позвоните, расскажут всё о характере и здоровье.</p>'} />
+
+        <div class="animal__actions card card--pad card--soft">
+          <h3>Хотите забрать {a.count > 1 ? 'их' : a.sex === 'f' ? 'её' : 'его'} домой?</h3>
+          <p class="small">Позвоните руководителю приюта, заполните анкету и приезжайте знакомиться в приёмный день. Передача — по договору, с испытательным сроком.</p>
+          <div class="row">
+            <a class="btn btn--green" href={telHref(head.tel)}><Icon name="phone" size={16} /> {head.phone}</a>
+            <a class="btn btn--ghost" href={config.vk.formUrl} target="_blank" rel="noopener"><Icon name="doc" size={16} /> Анкета</a>
+          </div>
+        </div>
+        <div class="animal__actions card card--pad card--amber">
+          <h3>Стать опекуном — {rub(config.donate.guardianshipMonthly)} в месяц</h3>
+          <p class="small">Пока {a.name} {verb} дом, опекун оплачивает {a.count > 1 ? 'их' : a.sex === 'f' ? 'её' : 'его'} корм и лечение, получает фото и может приезжать гулять. На вольере появится табличка с вашим именем.</p>
+          <a class="btn btn--primary" href={withBase(`/help/?guardian=${encodeURIComponent(a.name)}#donate`)}><Icon name="heart" size={16} /> Взять под опеку</a>
+        </div>
+        <div class="row small muted">
+          {a.vkAlbum && <a href={a.vkAlbum} target="_blank" rel="noopener"><Icon name="vk" size={14} /> Альбом ВКонтакте</a>}
+          {a.url && <a href={a.url} target="_blank" rel="noopener"><Icon name="vk" size={14} /> Карточка в группе</a>}
+          <button type="button" class="link-btn" data-share={`${a.name} ${verb} дом — приют «Верный друг»`}><Icon name="external" size={14} /> Поделиться</button>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  {others.length > 0 && (
+    <section class="section section--alt">
+      <div class="container">
+        <div class="section-head">
+          <h2>Ещё {a.kind === 'cat' ? 'кошки' : 'собаки'}, которые ищут дом</h2>
+          <a class="btn btn--ghost btn--sm" href={withBase(`/animals/?kind=${a.kind}`)}>Все <Icon name="arrow" size={16} /></a>
+        </div>
+        <div class="grid grid--4">
+          {others.map((o) => <AnimalCard animal={o} />)}
+        </div>
+      </div>
+    </section>
+  )}
+</Base>
+
+<script>
+  const main = document.getElementById('mainPhoto') as HTMLImageElement | null;
+  document.querySelectorAll<HTMLButtonElement>('.animal__thumb').forEach((b) =>
+    b.addEventListener('click', () => {
+      if (!main) return;
+      main.src = b.dataset.src!;
+      (main.parentElement as HTMLAnchorElement).href = b.dataset.src!;
+      document.querySelectorAll('.animal__thumb').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    }),
+  );
+  document.querySelector<HTMLButtonElement>('[data-share]')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget as HTMLButtonElement;
+    const data = { title: btn.dataset.share, text: btn.dataset.share, url: location.href };
+    if (navigator.share) {
+      try {
+        await navigator.share(data);
+      } catch {}
+    } else {
+      await navigator.clipboard.writeText(location.href);
+      btn.textContent = 'Ссылка скопирована';
+    }
+  });
+</script>
+
+<style>
+  .animal {
+    padding: clamp(20px, 4vw, 48px) 0;
+  }
+  .animal__grid {
+    display: grid;
+    gap: 28px;
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  @media (min-width: 900px) {
+    .animal__grid {
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 40px;
+    }
+    .animal__gallery {
+      position: sticky;
+      top: calc(var(--header-h) + 16px);
+    }
+  }
+  .animal__main {
+    display: block;
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+  }
+  .animal__thumbs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .animal__thumb {
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--surface-2);
+    cursor: pointer;
+    aspect-ratio: 1;
+  }
+  .animal__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .animal__thumb[aria-pressed='true'] {
+    border-color: var(--green);
+  }
+  .animal__info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .animal__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+  }
+  .animal__facts span {
+    display: flex;
+    flex-direction: column;
+    font-weight: 700;
+  }
+  .animal__facts b {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .animal__desc {
+    color: var(--ink-2);
+  }
+  .animal__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .animal__actions h3 {
+    font-size: 1.15rem;
+  }
+  .animal__actions .row {
+    margin-top: 4px;
+  }
+  .link-btn {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: var(--green);
+    font: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .row a {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+</style>

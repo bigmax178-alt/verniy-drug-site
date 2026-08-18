@@ -1,0 +1,316 @@
+---
+import Base from '../layouts/Base.astro';
+import config from '../../site.config.mjs';
+import Icon from '../components/Icon.astro';
+import AnimalCard from '../components/AnimalCard.astro';
+import PostCard from '../components/PostCard.astro';
+import { lookingAnimals, dogs, cats, newsPosts, activeCampaigns, stats, animalPhoto, plural } from '../lib/data';
+import { withBase, telHref } from '../lib/format';
+
+const featured = [...lookingAnimals].sort((a, b) => (b.date || 0) - (a.date || 0)).slice(0, 8);
+const heroAnimal = lookingAnimals.find((a) => a.slug.startsWith('ben')) || lookingAnimals[0];
+const heroPhoto = heroAnimal ? animalPhoto(heroAnimal) : null;
+const latest = newsPosts.slice(0, 3);
+const campaigns = activeCampaigns.slice(0, 2);
+const members = new Intl.NumberFormat('ru-RU').format(stats.members);
+---
+<Base title={config.name} description={`${config.fullName}: ${stats.dogs} собак и ${stats.cats} кошек ждут дом. Помочь можно за минуту — переводом, кормом, опекунством или репостом.`} image={heroPhoto?.src || null}>
+  <section class="hero">
+    <div class="container hero__inner">
+      <div class="hero__text">
+        <div class="eyebrow">Частный приют · Ленинградская область · с {config.since} года</div>
+        <h1>{stats.dogs} собак и {stats.cats} {plural(stats.cats, 'кошка', 'кошки', 'кошек')} ждут дом. А пока — ваш корм и заботу.</h1>
+        <p class="lede">«Верный друг» держится на руководителе, одном сотруднике, волонтёрах и людях, которые помогают издалека. За три года домой уехали больше {stats.adopted} хвостов.</p>
+        <div class="hero__cta">
+          <a class="btn btn--primary btn--lg" href={withBase('/help/#donate')}><Icon name="heart" size={18} /> Помочь приюту</a>
+          <a class="btn btn--ghost btn--lg" href={withBase('/animals/')}><Icon name="paw" size={18} /> Кто ищет дом</a>
+        </div>
+        <dl class="hero__stats">
+          <div><dt>{stats.dogs}</dt><dd>{plural(stats.dogs, 'собака', 'собаки', 'собак')}</dd></div>
+          <div><dt>{stats.cats}</dt><dd>{plural(stats.cats, 'кошка', 'кошки', 'кошек')}</dd></div>
+          <div><dt>{stats.adopted}+</dt><dd>нашли дом</dd></div>
+          <div><dt>{members}</dt><dd>друзей в VK</dd></div>
+        </dl>
+      </div>
+      {heroPhoto && heroAnimal && (
+        <a class="hero__photo" href={withBase(`/animals/${heroAnimal.slug}/`)}>
+          <img src={heroPhoto.src} alt={`${heroAnimal.name} ищет дом`} width="720" height="540" fetchpriority="high" decoding="async" />
+          <span class="hero__caption"><Icon name="paw" size={14} /> {heroAnimal.name} ищет дом →</span>
+        </a>
+      )}
+    </div>
+  </section>
+
+  {campaigns.length > 0 && (
+    <section class="section section--tight">
+      <div class="container">
+        <div class="section-head">
+          <div><div class="eyebrow">Прямо сейчас</div><h2>Открытые сборы</h2></div>
+          <a class="btn btn--ghost btn--sm" href={withBase('/news/?filter=fundraising')}>Все сборы</a>
+        </div>
+        <div class:list={['grid', campaigns.length === 1 ? 'grid--single' : 'grid--2']}>
+          {campaigns.map((p) => <PostCard post={p} />)}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Ищут дом</div>
+          <h2>{dogs.length} {plural(dogs.length, 'собака', 'собаки', 'собак')} и {cats.length} {plural(cats.length, 'кошка', 'кошки', 'кошек')} с историей</h2>
+          <p>Каждого можно навестить в приёмный день, стать опекуном или забрать домой по договору.</p>
+        </div>
+        <a class="btn btn--ghost btn--sm" href={withBase('/animals/')}>Смотреть всех <Icon name="arrow" size={16} /></a>
+      </div>
+      <div class="grid grid--4">
+        {featured.map((a, i) => <AnimalCard animal={a} loading={i < 4 ? 'eager' : 'lazy'} />)}
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container">
+      <div class="section-head">
+        <div><div class="eyebrow">Как помочь</div><h2>Четыре способа, и каждый по-настоящему нужен</h2></div>
+      </div>
+      <div class="grid grid--4 ways">
+        <a class="way card card--pad" href={withBase('/help/#donate')}>
+          <span class="way__icon" style="background:var(--amber-soft);color:var(--amber-dark)"><Icon name="heart" size={22} /></span>
+          <h3>Деньгами</h3>
+          <p>По QR-коду, СБП или на счёт АНО. Лучше всего — ежемесячно: так приюту можно планировать корм и лечение.</p>
+          <span class="way__more">Пожертвовать <Icon name="arrow" size={16} /></span>
+        </a>
+        <a class="way card card--pad" href={withBase('/help/#guardianship')}>
+          <span class="way__icon"><Icon name="paw" size={22} /></span>
+          <h3>Опекунством</h3>
+          <p>{new Intl.NumberFormat('ru-RU').format(config.donate.guardianshipMonthly)} ₽ в месяц за конкретного подопечного. Табличка на вольере, фото и право приезжать в гости.</p>
+          <span class="way__more">Выбрать подопечного <Icon name="arrow" size={16} /></span>
+        </a>
+        <a class="way card card--pad" href={withBase('/help/#needs')}>
+          <span class="way__icon"><Icon name="gift" size={22} /></span>
+          <h3>Кормом и вещами</h3>
+          <p>Список нужд, пункты сбора в Петербурге и заказ прямо в приют через «Мурзик» и маркетплейсы.</p>
+          <span class="way__more">Что нужно сейчас <Icon name="arrow" size={16} /></span>
+        </a>
+        <a class="way card card--pad" href={withBase('/help/#volunteer')}>
+          <span class="way__icon"><Icon name="car" size={22} /></span>
+          <h3>Руками и машиной</h3>
+          <p>Приют в лесу под Первомайским: очень нужны автоволонтёры, помощь с выгулом, стройкой и передержкой.</p>
+          <span class="way__more">Стать волонтёром <Icon name="arrow" size={16} /></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  {latest.length > 0 && (
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div><div class="eyebrow">Новости</div><h2>Что происходит в приюте</h2><p>Лента группы ВКонтакте — здесь, без регистрации.</p></div>
+          <a class="btn btn--ghost btn--sm" href={withBase('/news/')}>Все новости <Icon name="arrow" size={16} /></a>
+        </div>
+        <div class="grid grid--3">
+          {latest.map((p) => <PostCard post={p} compact />)}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <section class="section section--alt">
+    <div class="container visit">
+      <div class="visit__text">
+        <div class="eyebrow">Приехать в гости</div>
+        <h2>Приёмные дни: {config.visitingDays.open.map((d) => d.slice(0, 2)).join(', ')}</h2>
+        <p>Приют работает для гостей в {config.visitingDays.open.join(', ')}. {config.visitingDays.note}</p>
+        <div class="row">
+          {config.contacts.slice(0, 2).map((c) => (
+            <a class="btn btn--green" href={telHref(c.tel)}><Icon name="phone" size={16} /> {c.phone} · {c.name}</a>
+          ))}
+          <a class="btn btn--ghost" href={withBase('/about/#visit')}>Как добраться</a>
+        </div>
+      </div>
+      <div class="visit__days" aria-label="График">
+        {['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье'].map((d) => (
+          <span class:list={['visit__day', { 'visit__day--open': config.visitingDays.open.includes(d) }]}>
+            <b>{d.slice(0, 2)}</b>
+            <small>{config.visitingDays.open.includes(d) ? 'приём' : 'закрыто'}</small>
+          </span>
+        ))}
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .hero {
+    padding: clamp(28px, 5vw, 64px) 0 clamp(28px, 4vw, 48px);
+    background: linear-gradient(180deg, var(--surface) 0%, var(--paper) 100%);
+    border-bottom: 1px solid var(--line);
+  }
+  .hero__inner {
+    display: grid;
+    gap: 32px;
+    align-items: center;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 900px) {
+    .hero__inner {
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 48px;
+    }
+  }
+  .hero__text {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .hero__text h1 {
+    max-width: 18ch;
+  }
+  .hero__cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .hero__stats {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    gap: 12px 28px;
+    margin: 8px 0 0;
+    justify-content: start;
+  }
+  .hero__stats div {
+    display: flex;
+    flex-direction: column;
+  }
+  .hero__stats dt {
+    font-family: var(--font-display);
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--green);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .hero__stats dd {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  @media (max-width: 480px) {
+    .hero__stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  .hero__photo {
+    position: relative;
+    display: block;
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    aspect-ratio: 4 / 3;
+  }
+  .hero__photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .hero__caption {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 0.9rem;
+    backdrop-filter: blur(6px);
+  }
+  .ways {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  }
+  .way {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .way:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+    color: var(--ink);
+  }
+  .way p {
+    color: var(--ink-2);
+    font-size: 0.97rem;
+    flex: 1;
+  }
+  .way__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--green-soft);
+    color: var(--green);
+    display: grid;
+    place-items: center;
+  }
+  .way__more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    color: var(--green);
+  }
+  .visit {
+    display: grid;
+    gap: 28px;
+    align-items: center;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 900px) {
+    .visit {
+      grid-template-columns: 1.2fr 0.8fr;
+    }
+  }
+  .visit__text {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .visit__text p {
+    color: var(--ink-2);
+    max-width: 60ch;
+  }
+  .visit__days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .visit__day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 12px 4px;
+    border-radius: 12px;
+    background: var(--surface-2);
+    color: var(--muted);
+    text-transform: capitalize;
+  }
+  .visit__day small {
+    font-size: 0.65rem;
+    text-transform: none;
+  }
+  .visit__day--open {
+    background: var(--green);
+    color: #fff;
+  }
+</style>

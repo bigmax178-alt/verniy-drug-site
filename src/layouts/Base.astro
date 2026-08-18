@@ -1,0 +1,144 @@
+---
+import '../styles/global.css';
+import config from '../../site.config.mjs';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import TabBar from '../components/TabBar.astro';
+import { withBase } from '../lib/format';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string | null;
+  type?: 'website' | 'article';
+  noindex?: boolean;
+  jsonLd?: Record<string, any> | Record<string, any>[];
+  bodyClass?: string;
+}
+const {
+  title,
+  description = config.tagline,
+  image = null,
+  type = 'website',
+  noindex = false,
+  jsonLd,
+  bodyClass = '',
+} = Astro.props;
+
+const site = (Astro.site?.toString() || config.siteUrl).replace(/\/$/, '');
+const canonical = new URL(Astro.url.pathname, site + '/').toString();
+const ogImage = image ? (image.startsWith('http') ? image : site + withBase(image)) : site + withBase('/media/og-default.jpg');
+const fullTitle = title === config.name ? `${config.name} — ${config.tagline}` : `${title} — приют «${config.name}»`;
+
+const orgLd = {
+  '@context': 'https://schema.org',
+  '@type': 'NGO',
+  name: config.legalName,
+  alternateName: config.fullName,
+  url: site,
+  logo: site + withBase('/media/logo.png'),
+  foundingDate: String(config.since),
+  address: { '@type': 'PostalAddress', addressLocality: 'посёлок Первомайское', addressRegion: 'Ленинградская область', addressCountry: 'RU' },
+  telephone: config.contacts[0].tel,
+  sameAs: [config.vk.url],
+};
+const ld = [orgLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [])];
+---
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex,follow" />}
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content={`Приют «${config.name}»`} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:locale" content="ru_RU" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#245c43" />
+    <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
+    <link rel="apple-touch-icon" href={withBase('/media/apple-touch-icon.png')} />
+    <link rel="manifest" href={withBase('/manifest.webmanifest')} />
+    <link rel="preload" href={withBase('/fonts/lora-400-700-cyr.woff2')} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={withBase('/fonts/ptsans-400-cyr.woff2')} as="font" type="font/woff2" crossorigin />
+    <link rel="alternate" type="application/rss+xml" title={`Новости приюта «${config.name}»`} href={withBase('/rss.xml')} />
+    <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+    {config.yandexMetrikaId && (
+      <script is:inline define:vars={{ id: config.yandexMetrikaId }}>
+        (function (m, e, t, r, i, k, a) {
+          m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments); };
+          m[i].l = 1 * new Date();
+          k = e.createElement(t); a = e.getElementsByTagName(t)[0]; k.async = 1; k.src = r; a.parentNode.insertBefore(k, a);
+        })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js', 'ym');
+        window.__ym = id;
+        ym(id, 'init', { clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: false });
+      </script>
+    )}
+  </head>
+  <body class={`has-tabbar ${bodyClass}`.trim()}>
+    <a class="skip-link" href="#main">К содержимому</a>
+    <Header />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+    <TabBar />
+    <script>
+      // Кнопки «Скопировать» и цели Метрики. Без фреймворков — чтобы страница помощи открывалась мгновенно.
+      document.addEventListener('click', async (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-copy]');
+        if (!btn) return;
+        const value = btn.dataset.copy || '';
+        let ok = false;
+        try {
+          await navigator.clipboard.writeText(value);
+          ok = true;
+        } catch {
+          // Старые браузеры и WebView без Clipboard API.
+          const ta = document.createElement('textarea');
+          ta.value = value;
+          ta.setAttribute('readonly', '');
+          ta.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+          document.body.appendChild(ta);
+          ta.select();
+          try {
+            ok = document.execCommand('copy');
+          } catch {}
+          ta.remove();
+        }
+        if (ok) {
+          const label = btn.textContent;
+          btn.dataset.copied = '1';
+          btn.textContent = 'Скопировано';
+          setTimeout(() => {
+            btn.dataset.copied = '';
+            btn.textContent = label;
+          }, 1800);
+          (window as any).ym?.((window as any).__ym, 'reachGoal', 'copy_requisites');
+        } else {
+          window.prompt('Скопируйте вручную:', value);
+        }
+      });
+    </script>
+    <style is:global>
+      .skip-link {
+        position: absolute;
+        left: -999px;
+        top: 8px;
+        background: var(--surface);
+        padding: 8px 12px;
+        border-radius: 8px;
+        z-index: 100;
+      }
+      .skip-link:focus {
+        left: 8px;
+      }
+    </style>
+  </body>
+</html>

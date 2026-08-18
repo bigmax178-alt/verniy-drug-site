@@ -1,0 +1,116 @@
+---
+import config from '../../site.config.mjs';
+import Icon from './Icon.astro';
+import { meta, postsSource } from '../lib/data';
+import { withBase, telHref } from '../lib/format';
+
+const synced = meta?.syncedAt ? new Date(meta.syncedAt) : null;
+const syncedText = synced
+  ? synced.toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' })
+  : null;
+const year = new Date().getFullYear();
+---
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__col footer__col--about">
+        <div class="footer__brand"><Icon name="paw" size={20} /> Верный друг</div>
+        <p class="muted small">{config.legalName}. Частный приют в Выборгском районе Ленинградской области, работает с {config.since} года.</p>
+        <p class="small"><a href={config.vk.url} target="_blank" rel="noopener">Группа ВКонтакте</a> · <a href={withBase('/rss.xml')}>RSS</a></p>
+      </div>
+      <div class="footer__col">
+        <h4>Помощь</h4>
+        <a href={withBase('/help/#donate')}>Пожертвовать</a>
+        <a href={withBase('/help/#guardianship')}>Опекунство</a>
+        <a href={withBase('/help/#needs')}>Нужды приюта</a>
+        <a href={withBase('/help/#points')}>Пункты сбора</a>
+        <a href={withBase('/help/#volunteer')}>Волонтёрам</a>
+      </div>
+      <div class="footer__col">
+        <h4>Приют</h4>
+        <a href={withBase('/animals/')}>Ищут дом</a>
+        <a href={withBase('/adopted/')}>Нашли дом</a>
+        <a href={withBase('/news/')}>Новости</a>
+        <a href={withBase('/reports/')}>Отчёты и документы</a>
+        <a href={withBase('/about/')}>О приюте и контакты</a>
+      </div>
+      <div class="footer__col">
+        <h4>Контакты</h4>
+        {config.contacts.map((c) => (
+          <a href={telHref(c.tel)}>{c.phone} <span class="muted">— {c.name}</span></a>
+        ))}
+        <span class="muted small">{config.location}</span>
+      </div>
+    </div>
+    <div class="footer__legal">
+      <span>ИНН {config.donate.org.inn} · ОГРН {config.donate.org.ogrn}</span>
+      <a href={withBase('/docs/offer/')}>Оферта пожертвования</a>
+      <a href={withBase('/docs/privacy/')}>Персональные данные</a>
+      <span class="muted">
+        {syncedText ? `Данные из ВКонтакте обновлены ${syncedText} (МСК)` : postsSource === 'seed' ? 'Сайт показывает стартовые данные; после подключения ВКонтакте всё обновляется автоматически' : ''}
+      </span>
+      <span class="muted">© {config.since}–{year} Приют «Верный друг»</span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    padding: 40px 0 28px;
+    margin-top: 40px;
+    font-size: 0.95rem;
+  }
+  .footer__grid {
+    display: grid;
+    gap: 28px 24px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+  .footer__col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .footer__col a {
+    color: var(--ink-2);
+    text-decoration: none;
+  }
+  .footer__col a:hover {
+    color: var(--green);
+    text-decoration: underline;
+  }
+  .footer__col h4 {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .footer__col--about {
+    grid-column: span 1;
+  }
+  .footer__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--green);
+  }
+  .footer__legal {
+    margin-top: 28px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    font-size: 0.85rem;
+    color: var(--ink-2);
+  }
+  .footer__legal a {
+    color: var(--ink-2);
+  }
+</style>

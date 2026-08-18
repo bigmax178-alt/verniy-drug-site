@@ -1,0 +1,43 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import AnimalCard from '../components/AnimalCard.astro';
+import { lookingAnimals } from '../lib/data';
+import { withBase } from '../lib/format';
+const pick = lookingAnimals.filter((a) => a.kind === 'cat')[0] || lookingAnimals[0];
+---
+<Base title="Страница не найдена" noindex>
+  <section class="section">
+    <div class="container nf">
+      <div>
+        <div class="eyebrow">Ошибка 404</div>
+        <h1>Такой страницы нет. Зато есть {pick ? pick.name : 'те, кто ищет дом'}</h1>
+        <p class="lede">Ссылка могла устареть — сайт обновляется из ВКонтакте, и карточки пристроенных животных исчезают (это хорошая новость).</p>
+        <div class="row">
+          <a class="btn btn--green" href={withBase('/')}><Icon name="home" size={16} /> На главную</a>
+          <a class="btn btn--ghost" href={withBase('/animals/')}><Icon name="paw" size={16} /> Кто ищет дом</a>
+        </div>
+      </div>
+      {pick && <div class="nf__card"><AnimalCard animal={pick} /></div>}
+    </div>
+  </section>
+</Base>
+<style>
+  .nf {
+    display: grid;
+    gap: 28px;
+    grid-template-columns: 1fr;
+    align-items: center;
+  }
+  @media (min-width: 800px) {
+    .nf {
+      grid-template-columns: 1.3fr 0.7fr;
+    }
+  }
+  .nf .row {
+    margin-top: 16px;
+  }
+  .nf__card {
+    max-width: 320px;
+  }
+</style>

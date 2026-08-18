@@ -1,0 +1,86 @@
+---
+import type { Animal } from '../lib/data';
+import { ageOf, animalPhoto } from '../lib/data';
+import { withBase } from '../lib/format';
+import Icon from './Icon.astro';
+
+interface Props {
+  animal: Animal;
+  loading?: 'lazy' | 'eager';
+}
+const { animal: a, loading = 'lazy' } = Astro.props;
+const photo = animalPhoto(a);
+const age = ageOf(a);
+const sexLabel = a.count > 1 ? (a.sex === 'f' ? 'девочки' : a.sex === 'm' ? 'мальчики' : null) : a.sex === 'f' ? 'девочка' : a.sex === 'm' ? 'мальчик' : null;
+---
+<a class="animal-card" href={withBase(`/animals/${a.slug}/`)} data-kind={a.kind} data-sex={a.sex || ''} data-year={a.birthYear || ''} data-traits={a.traits.join('|')}>
+  <div class="ratio ratio--4x3 animal-card__photo">
+    {photo ? <img src={photo.thumb || photo.src} alt={`${a.name} — ${a.kind === 'cat' ? 'кошка' : 'собака'} из приюта`} loading={loading} decoding="async" width="600" height="450" /> : <div class="animal-card__noimg"><Icon name={a.kind === 'cat' ? 'cat' : 'dog'} size={40} /></div>}
+    <span class="animal-card__kind pill"><Icon name={a.kind === 'cat' ? 'cat' : 'dog'} size={14} /> {a.kind === 'cat' ? (a.count > 1 ? 'кошки' : 'кошка') : a.count > 1 ? 'собаки' : 'собака'}</span>
+  </div>
+  <div class="animal-card__body">
+    <h3 class="animal-card__name">{a.name}</h3>
+    <div class="animal-card__meta muted small">
+      {[sexLabel, age].filter(Boolean).join(' · ')}
+    </div>
+    {a.traits.length > 0 && (
+      <div class="animal-card__traits">
+        {a.traits.slice(0, 3).map((t) => <span class="pill pill--green">{t}</span>)}
+      </div>
+    )}
+  </div>
+</a>
+
+<style>
+  .animal-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--ink);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .animal-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+    color: var(--ink);
+  }
+  .animal-card__photo img {
+    transition: transform 0.4s;
+  }
+  .animal-card:hover .animal-card__photo img {
+    transform: scale(1.03);
+  }
+  .animal-card__noimg {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+  }
+  .animal-card__kind {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    backdrop-filter: blur(6px);
+  }
+  .animal-card__body {
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .animal-card__name {
+    font-size: 1.25rem;
+  }
+  .animal-card__traits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+</style>

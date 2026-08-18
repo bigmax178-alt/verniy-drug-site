@@ -1,0 +1,48 @@
+---
+import type { Photo } from '../lib/data';
+
+interface Props {
+  photos: Photo[];
+  max?: number;
+  alt?: string;
+  linkToFull?: boolean;
+}
+const { photos, max = 4, alt = '', linkToFull = true } = Astro.props;
+const shown = photos.slice(0, max);
+const rest = photos.length - shown.length;
+const cls = shown.length === 1 ? 'photo-grid--1' : shown.length === 3 ? 'photo-grid--3' : '';
+---
+{shown.length > 0 && (
+  <div class:list={['photo-grid', cls]}>
+    {shown.map((p, i) => (
+      linkToFull ? (
+        <a href={p.src} target="_blank" rel="noopener" class="photo-grid__item">
+          <img src={shown.length === 1 ? p.src : p.thumb || p.src} alt={p.text || alt} loading="lazy" decoding="async" width={p.w || undefined} height={p.h || undefined} />
+          {i === shown.length - 1 && rest > 0 && <span class="photo-grid__more">+{rest}</span>}
+        </a>
+      ) : (
+        <span class="photo-grid__item">
+          <img src={shown.length === 1 ? p.src : p.thumb || p.src} alt={p.text || alt} loading="lazy" decoding="async" width={p.w || undefined} height={p.h || undefined} />
+          {i === shown.length - 1 && rest > 0 && <span class="photo-grid__more">+{rest}</span>}
+        </span>
+      )
+    ))}
+  </div>
+)}
+
+<style>
+  .photo-grid__item {
+    position: relative;
+    display: block;
+  }
+  .photo-grid__more {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(27, 34, 29, 0.45);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.4rem;
+  }
+</style>

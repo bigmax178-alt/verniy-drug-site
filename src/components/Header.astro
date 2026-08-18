@@ -1,0 +1,141 @@
+---
+import config from '../../site.config.mjs';
+import Icon from './Icon.astro';
+import { withBase } from '../lib/format';
+
+const nav = [
+  { href: '/animals/', label: 'Ищут дом' },
+  { href: '/help/', label: 'Как помочь' },
+  { href: '/news/', label: 'Новости' },
+  { href: '/reports/', label: 'Отчёты' },
+  { href: '/about/', label: 'О приюте' },
+];
+const path = Astro.url.pathname.replace(/\/+$/, '/') || '/';
+const isActive = (href: string) => (href === '/' ? path === withBase('/') : path.startsWith(withBase(href)));
+---
+<header class="site-header">
+  <div class="container site-header__inner">
+    <a class="brand" href={withBase('/')} aria-label="Приют «Верный друг» — на главную">
+      <span class="brand__mark"><Icon name="paw" size={22} /></span>
+      <span class="brand__text">
+        <span class="brand__name">Верный друг</span>
+        <span class="brand__sub">приют для собак и кошек</span>
+      </span>
+    </a>
+    <nav class="site-nav" aria-label="Основное меню">
+      {nav.map((n) => (
+        <a href={withBase(n.href)} aria-current={isActive(n.href) ? 'page' : undefined}>{n.label}</a>
+      ))}
+    </nav>
+    <div class="site-header__actions">
+      <a class="site-header__vk" href={config.vk.url} target="_blank" rel="noopener" aria-label="Группа ВКонтакте"><Icon name="vk" size={22} /></a>
+      <a class="btn btn--primary btn--sm site-header__cta" href={withBase('/help/#donate')}>
+        <Icon name="heart" size={16} /> Помочь
+      </a>
+    </div>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: saturate(1.4) blur(10px);
+    -webkit-backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .site-header__inner {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    min-height: var(--header-h);
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--ink);
+    margin-right: auto;
+  }
+  .brand__mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--green);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    flex: none;
+  }
+  .brand__text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+  .brand__name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+  }
+  .brand__sub {
+    font-size: 0.74rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .site-nav {
+    display: none;
+    gap: 4px;
+  }
+  .site-nav a {
+    text-decoration: none;
+    color: var(--ink-2);
+    font-weight: 700;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 0.98rem;
+  }
+  .site-nav a:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+  .site-nav a[aria-current='page'] {
+    color: var(--green);
+    background: var(--green-soft);
+  }
+  .site-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .site-header__vk {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    color: var(--ink-2);
+  }
+  .site-header__vk:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+  @media (min-width: 900px) {
+    .site-nav {
+      display: flex;
+    }
+    .site-header__cta {
+      padding: 10px 18px;
+      min-height: 42px;
+      font-size: 0.98rem;
+    }
+  }
+  @media (max-width: 380px) {
+    .brand__sub {
+      display: none;
+    }
+  }
+</style>

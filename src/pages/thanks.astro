@@ -1,0 +1,68 @@
+---
+import Base from '../layouts/Base.astro';
+import config from '../../site.config.mjs';
+import Icon from '../components/Icon.astro';
+import AnimalCard from '../components/AnimalCard.astro';
+import { lookingAnimals, topicByKey } from '../lib/data';
+import { withBase } from '../lib/format';
+
+const donationsTopic = topicByKey('donations');
+const picks = lookingAnimals.slice(0, 4);
+const shareText = encodeURIComponent('Я помог(ла) приюту «Верный друг» — там 130 собак и кошек ждут дом. Присоединяйтесь:');
+---
+<Base title="Спасибо!" description="Спасибо за помощь приюту «Верный друг»." noindex>
+  <section class="section">
+    <div class="container thanks">
+      <div class="thanks__icon"><Icon name="heart" size={32} /></div>
+      <h1>Спасибо! Сегодня в приюте стало немного теплее</h1>
+      <p class="lede" id="thanksText">Ваша помощь дошла. Это корм, лечение и уверенность приюта в завтрашнем дне.</p>
+      <div class="row" style="justify-content:center">
+        {donationsTopic && <a class="btn btn--green" href={donationsTopic.url} target="_blank" rel="noopener"><Icon name="vk" size={16} /> Отписаться о переводе приюту</a>}
+        <a class="btn btn--ghost" href={`https://vk.com/share.php?url=${encodeURIComponent(config.siteUrl)}&title=${shareText}`} target="_blank" rel="noopener"><Icon name="external" size={16} /> Рассказать друзьям</a>
+      </div>
+      <p class="small muted">Приют сводит отчёт по сообщениям в обсуждении «Пожертвования приюту» — если напишете туда сумму, им будет проще. А если вы оформили ежемесячную помощь, письмо с деталями придёт на почту.</p>
+    </div>
+  </section>
+  <section class="section section--alt">
+    <div class="container">
+      <div class="section-head"><div><div class="eyebrow">А ещё</div><h2>Можно стать чьим-то опекуном</h2></div><a class="btn btn--ghost btn--sm" href={withBase('/animals/')}>Все подопечные</a></div>
+      <div class="grid grid--4">{picks.map((a) => <AnimalCard animal={a} />)}</div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const p = new URLSearchParams(location.search);
+  const a = Number(p.get('a'));
+  const m = p.get('m') === '1';
+  const g = p.get('g');
+  const el = document.getElementById('thanksText');
+  if (el && a) {
+    const sum = new Intl.NumberFormat('ru-RU').format(a) + ' ₽';
+    el.textContent = g
+      ? `Вы стали опекуном: ${sum} в месяц для ${g}. Приют напишет вам и повесит табличку на вольер.`
+      : m
+        ? `Ежемесячная помощь ${sum} оформлена. Это самая ценная поддержка: с ней приют может планировать корм и лечение.`
+        : `Пожертвование ${sum} получено. Это корм, лечение и уверенность приюта в завтрашнем дне.`;
+  }
+</script>
+
+<style>
+  .thanks {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 18px;
+    max-width: 720px;
+  }
+  .thanks__icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    background: var(--amber-soft);
+    color: var(--amber-dark);
+    display: grid;
+    place-items: center;
+  }
+</style>

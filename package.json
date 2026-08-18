@@ -1,0 +1,19 @@
+{
+  "name": "verniy-drug-site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Сайт приюта «Верный друг», который обновляется из ВКонтакте",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "sync": "node scripts/sync-vk.mjs",
+    "sync:build": "node scripts/sync-vk.mjs && astro build",
+    "seed": "node scripts/import-tilda-seed.mjs"
+  },
+  "dependencies": {
+    "astro": "^5.12.0"
+  },
+  "engines": { "node": ">=20" }
+}

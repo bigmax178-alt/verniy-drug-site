@@ -1,0 +1,88 @@
+# Синхронизация из ВКонтакте + сборка + публикация на GitHub Pages.
+#
+# Запускается: по расписанию каждые 30 минут, при пуше в main, вручную,
+# и мгновенно — по repository_dispatch от VK Callback API (см. callback/README.md).
+#
+# Секреты репозитория (Settings → Secrets and variables → Actions):
+#   VK_TOKEN                 — сервисный ключ VK-приложения или токен админа группы (обязательно)
+#   CLOUDPAYMENTS_PUBLIC_ID  — если подключён эквайринг (необязательно)
+#   YANDEX_METRIKA_ID        — номер счётчика (необязательно)
+# Переменные (Variables):
+#   SITE_URL   — https://verniy-drug.ru (или https://<user>.github.io/<repo>)
+#   BASE_PATH  — «/» для своего домена, «/<repo>» для страницы проекта на github.io
+
+name: sync-and-deploy
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  push:
+    branches: [main]
+  workflow_dispatch:
+  repository_dispatch:
+    types: [vk-update]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: sync-and-deploy
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      - name: Синхронизация из ВКонтакте
+        env:
+          VK_TOKEN: ${{ secrets.VK_TOKEN }}
+        run: node scripts/sync-vk.mjs
+
+      - name: Сохранить свежие данные в репозиторий
+        run: |
+          git config user.name "vk-sync bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A src/data/vk || true
+          if ! git diff --cached --quiet; then
+            git commit -m "data: синхронизация из ВКонтакте $(date -u +'%Y-%m-%d %H:%M UTC') [skip ci]"
+            git push
+          else
+            echo "Данные не изменились"
+          fi
+
+      - name: Сборка сайта
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          BASE_PATH: ${{ vars.BASE_PATH }}
+          CLOUDPAYMENTS_PUBLIC_ID: ${{ secrets.CLOUDPAYMENTS_PUBLIC_ID }}
+          YANDEX_METRIKA_ID: ${{ secrets.YANDEX_METRIKA_ID }}
+        run: npm run build
+
+      - name: Отчёт о синхронизации
+        run: |
+          if [ -f src/data/vk/meta.json ]; then cat src/data/vk/meta.json; else echo "VK_TOKEN не задан — сайт собран из стартовых данных"; fi
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

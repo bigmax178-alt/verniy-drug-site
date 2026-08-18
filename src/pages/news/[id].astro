@@ -1,0 +1,83 @@
+---
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import PostCard from '../../components/PostCard.astro';
+import { posts, newsPosts } from '../../lib/data';
+import { withBase, excerpt, isoDate, formatDate } from '../../lib/format';
+
+export function getStaticPaths() {
+  return posts.map((p) => ({ params: { id: String(p.id) }, props: { post: p } }));
+}
+const { post: p } = Astro.props;
+const idx = newsPosts.findIndex((x) => x.id === p.id);
+const prev = idx > 0 ? newsPosts[idx - 1] : null;
+const next = idx >= 0 && idx < newsPosts.length - 1 ? newsPosts[idx + 1] : null;
+const title = p.title || `Запись от ${formatDate(p.date, { withYear: true })}`;
+const ld = {
+  '@context': 'https://schema.org',
+  '@type': 'NewsArticle',
+  headline: title,
+  datePublished: isoDate(p.date),
+  image: p.photos[0]?.src,
+  articleBody: excerpt(p.text, 500),
+  publisher: { '@type': 'Organization', name: 'Приют «Верный друг»' },
+};
+---
+<Base title={title} description={excerpt(p.text || p.repost?.text || '', 160)} image={p.photos[0]?.src || null} type="article" jsonLd={ld}>
+  <article class="section section--tight">
+    <div class="container narrow">
+      <a class="back" href={withBase('/news/')}><Icon name="arrow" size={16} class="flip" /> Все новости</a>
+      <h1 class="post-title">{title}</h1>
+      <PostCard post={p} full />
+      <div class="pager">
+        {next ? <a href={withBase(`/news/${next.id}/`)}>← Раньше: {excerpt(next.title || next.text, 50)}</a> : <span />}
+        {prev ? <a href={withBase(`/news/${prev.id}/`)}>Позже: {excerpt(prev.title || prev.text, 50)} →</a> : <span />}
+      </div>
+      <div class="card card--pad card--amber cta">
+        <h3>Понравилось, как живёт приют? Помогите ему жить дальше</h3>
+        <p class="small">Каждое пожертвование — это корм, лечение и тёплый вольер. Можно за минуту, по QR-коду.</p>
+        <a class="btn btn--primary" href={withBase('/help/#donate')}><Icon name="heart" size={16} /> Помочь приюту</a>
+      </div>
+    </div>
+  </article>
+</Base>
+
+<style>
+  .narrow {
+    max-width: 760px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .back :global(.flip) {
+    transform: rotate(180deg);
+  }
+  .post-title {
+    font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.3rem);
+  }
+  .pager {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    font-size: 0.92rem;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+  .pager a:last-child {
+    text-align: right;
+  }
+  .cta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+</style>
