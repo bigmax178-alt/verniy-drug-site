@@ -6,6 +6,8 @@
   "trailingSlash": true,
   "rewrites": [
     { "source": "/admin", "destination": "/api/admin?__path=/admin" },
+    { "source": "/admin/", "destination": "/api/admin?__path=/admin" },
+    { "source": "/admin/:path*/", "destination": "/api/admin?__path=/admin/:path*" },
     { "source": "/admin/:path*", "destination": "/api/admin?__path=/admin/:path*" },
     { "source": "/media/admin/:file", "destination": "/api/admin?__path=/media/admin/:file" }
   ]

@@ -52,6 +52,7 @@ const year = new Date().getFullYear();
         {syncedText ? `Данные из ВКонтакте обновлены ${syncedText} (МСК)` : postsSource === 'seed' ? 'Сайт показывает стартовые данные; после подключения ВКонтакте всё обновляется автоматически' : ''}
       </span>
       <span class="muted">© {config.since}–{year} Приют «Верный друг»</span>
+      <a class="footer__admin" href="/admin/" rel="nofollow">Вход для приюта</a>
     </div>
   </div>
 </footer>
@@ -114,5 +115,26 @@ const year = new Date().getFullYear();
   }
   .footer__legal a {
     color: var(--ink-2);
+  }
+  /* Вход в админку: нужен только сотрудникам, поэтому неброский, но всегда на месте. */
+  .footer__admin {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    text-decoration: none;
+    color: var(--muted) !important;
+  }
+  .footer__admin:hover {
+    border-color: var(--green);
+    color: var(--green) !important;
+    background: var(--green-soft);
+  }
+  .footer__admin::before {
+    content: '🔑';
+    font-size: 0.85em;
   }
 </style>
