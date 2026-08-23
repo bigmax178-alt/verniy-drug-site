@@ -1,28 +1,5 @@
 {
  "version": 1,
- "updatedAt": "2026-08-23T13:29:21.292Z",
- "animals": [
-  {
-   "id": "manual-8mto3X1U",
-   "source": "manual",
-   "slug": "testovyy-barsik",
-   "name": "Тестовый Барсик",
-   "kind": "cat",
-   "sex": "m",
-   "count": 1,
-   "birthYear": 2021,
-   "ageText": null,
-   "description": "Проверка записи из админки в репозиторий.",
-   "traits": [
-    "лоток"
-   ],
-   "photos": [],
-   "patron": null,
-   "status": "hidden",
-   "vkAlbum": null,
-   "url": null,
-   "createdAt": "2026-08-23T13:29:21.191Z",
-   "updatedAt": "2026-08-23T13:29:21.191Z"
-  }
- ]
+ "updatedAt": "2026-08-23T13:34:48.703Z",
+ "animals": []
 }
