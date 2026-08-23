@@ -3,6 +3,7 @@ import Base from '../../layouts/Base.astro';
 import config from '../../../site.config.mjs';
 import Icon from '../../components/Icon.astro';
 import AnimalCard from '../../components/AnimalCard.astro';
+import PatronageForm from '../../components/PatronageForm.astro';
 import { animals, lookingAnimals, ageOf, animalPhoto, type Photo } from '../../lib/data';
 import { withBase, vkTextToHtml, telHref, rub } from '../../lib/format';
 
@@ -17,6 +18,9 @@ const kindWord = a.kind === 'cat' ? (a.count > 1 ? 'кошки' : 'кошка') 
 const sexWord = a.count > 1 ? (a.sex === 'f' ? 'девочки' : a.sex === 'm' ? 'мальчики' : null) : a.sex === 'f' ? 'девочка' : a.sex === 'm' ? 'мальчик' : null;
 const verb = a.count > 1 ? 'ищут' : 'ищет';
 const others = lookingAnimals.filter((x) => x.id !== a.id && x.kind === a.kind).slice(0, 4);
+// Опекун показывается либо с именем и фото (если он дал отдельное согласие),
+// либо обезличенно: сам факт опеки персональными данными не является.
+const patron = (a.patron as any) || null;
 const head = config.contacts[0];
 const descr = a.description ? a.description.split('\n')[0].slice(0, 150) : `${a.name} из приюта «Верный друг» ${verb} дом.`;
 const ld = {
@@ -71,11 +75,36 @@ const ld = {
             <a class="btn btn--ghost" href={config.vk.formUrl} target="_blank" rel="noopener"><Icon name="doc" size={16} /> Анкета</a>
           </div>
         </div>
-        <div class="animal__actions card card--pad card--amber">
-          <h3>Стать опекуном — {rub(config.donate.guardianshipMonthly)} в месяц</h3>
-          <p class="small">Пока {a.name} {verb} дом, опекун оплачивает {a.count > 1 ? 'их' : a.sex === 'f' ? 'её' : 'его'} корм и лечение, получает фото и может приезжать гулять. На вольере появится табличка с вашим именем.</p>
-          <a class="btn btn--primary" href={withBase(`/help/?guardian=${encodeURIComponent(a.name)}#donate`)}><Icon name="heart" size={16} /> Взять под опеку</a>
-        </div>
+        {patron ? (
+          <div class="animal__actions card card--pad card--soft patron">
+            {patron.anonymous ? (
+              <>
+                <h3><Icon name="heart" size={18} /> У {a.name} есть опекун</h3>
+                <p class="small">Человек помогает {a.count > 1 ? 'им' : a.sex === 'f' ? 'ей' : 'ему'} каждый месяц и попросил не называть себя. {a.name} {a.count > 1 ? 'ждут' : 'ждёт'} дом — а забота уже есть.</p>
+              </>
+            ) : (
+              <>
+                <h3><Icon name="heart" size={18} /> Опекун</h3>
+                <div class="patron__row">
+                  {patron.photo && <img class="patron__photo" src={patron.photo} alt={`Опекун ${patron.name || ''}`} width="72" height="72" loading="lazy" />}
+                  <div>
+                    <strong>{patron.name}</strong>
+                    {patron.note && <div class="small muted">{patron.note}</div>}
+                    {patron.since && <div class="small muted">помогает с {patron.since}</div>}
+                  </div>
+                </div>
+              </>
+            )}
+            <p class="small muted">У животного может быть несколько опекунов — можно присоединиться.</p>
+            <a class="btn btn--ghost btn--sm" href="#patronage">Тоже стать опекуном</a>
+          </div>
+        ) : (
+          <div class="animal__actions card card--pad card--amber">
+            <h3>Стать опекуном — {rub(config.donate.guardianshipMonthly)} в месяц</h3>
+            <p class="small">Пока {a.name} {verb} дом, опекун оплачивает {a.count > 1 ? 'их' : a.sex === 'f' ? 'её' : 'его'} корм и лечение, получает фото и может приезжать гулять. На вольере появится табличка с вашим именем.</p>
+            <a class="btn btn--primary" href="#patronage"><Icon name="heart" size={16} /> Взять под опеку</a>
+          </div>
+        )}
         <div class="row small muted">
           {a.vkAlbum && <a href={a.vkAlbum} target="_blank" rel="noopener"><Icon name="vk" size={14} /> Альбом ВКонтакте</a>}
           {a.url && <a href={a.url} target="_blank" rel="noopener"><Icon name="vk" size={14} /> Карточка в группе</a>}
@@ -84,6 +113,12 @@ const ld = {
       </div>
     </div>
   </article>
+
+  <section class="section section--tight">
+    <div class="container narrow-form">
+      <PatronageForm animalId={a.id} animalName={a.name} />
+    </div>
+  </section>
 
   {others.length > 0 && (
     <section class="section section--alt">
@@ -207,6 +242,27 @@ const ld = {
   }
   .animal__actions .row {
     margin-top: 4px;
+  }
+  .narrow-form {
+    max-width: 720px;
+  }
+  .patron__row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin: 4px 0;
+  }
+  .patron__photo {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex: none;
+  }
+  .patron h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
   .link-btn {
     background: none;

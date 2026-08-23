@@ -1,0 +1,306 @@
+---
+// Форма «стать опекуном» на странице животного.
+//
+// Юридическая часть, которую нельзя упрощать:
+//  • согласие на обработку ПДн — отдельная обязательная галочка (ст. 9 152-ФЗ,
+//    с 01.09.2025 согласие оформляется отдельно от прочих подтверждений);
+//  • подтверждение совершеннолетия — тоже отдельная галочка: приют не собирает
+//    данные детей, чтобы не разбираться с согласием законных представителей;
+//  • согласие на публикацию имени и фото — добровольное, отдельное, с правом
+//    установить запреты, в которых приют не вправе отказать (ст. 10.1 152-ФЗ).
+// Ни одна галочка не отмечена заранее: молчание согласием не считается.
+import config from '../../site.config.mjs';
+import Icon from './Icon.astro';
+import { CONSENT_PROCESSING, CONSENT_DISSEMINATION, AGE_CONFIRMATION } from '../../shared/consent.mjs';
+import { withBase, telHref, rub } from '../lib/format';
+
+interface Props {
+  animalId: string;
+  animalName: string;
+  sexWord?: string;
+}
+const { animalId, animalName } = Astro.props;
+const api = config.adminApiUrl;
+const curator = config.contacts.find((c) => c.role.includes('куратор')) || config.contacts[0];
+---
+{api ? (
+  <section class="patronage" id="patronage" data-api={`${api}/api/patronage`} data-animal-id={animalId} data-animal-name={animalName}>
+    <div class="patronage__head">
+      <h2>Стать опекуном {animalName}</h2>
+      <p class="muted">
+        {rub(config.donate.guardianshipMonthly)} в месяц — корм, лечение и уход за одним подопечным. Оставьте заявку, куратор приюта свяжется с вами и всё расскажет.
+        Это ещё не обязательство: сначала просто поговорим.
+      </p>
+    </div>
+
+    <form class="patronage__form" novalidate>
+      <label class="field">
+        <span class="field__label">Как вас зовут? <em>*</em></span>
+        <input type="text" name="name" required maxlength="80" autocomplete="name" placeholder="Мария" />
+      </label>
+      <label class="field">
+        <span class="field__label">Телефон или почта <em>*</em></span>
+        <input type="text" name="contact" required maxlength="120" autocomplete="tel" placeholder="+7 900 000-00-00" />
+        <span class="field__hint">Нужно, чтобы мы могли ответить. Больше никуда эти данные не уйдут.</span>
+      </label>
+      <label class="field">
+        <span class="field__label">Хотите что-то добавить?</span>
+        <textarea name="message" maxlength="1000" rows="3" placeholder="Например, как удобнее связаться"></textarea>
+      </label>
+
+      {/* Ловушка для роботов: люди это поле не видят. */}
+      <div class="honey" aria-hidden="true"><label>Не заполняйте<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
+
+      <div class="consents">
+        <label class="check">
+          <input type="checkbox" name="ageConfirmed" required />
+          <span>{AGE_CONFIRMATION.checkboxLabel} <em>*</em>
+            <span class="field__hint">{AGE_CONFIRMATION.note}</span></span>
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="consentProcessing" required />
+          <span>{CONSENT_PROCESSING.checkboxLabel} <em>*</em>
+            <span class="field__hint">Мы используем их только чтобы ответить вам. <a href={withBase(CONSENT_PROCESSING.url)} target="_blank" rel="noopener">Прочитать согласие</a></span></span>
+        </label>
+
+        <div class="optional">
+          <label class="check">
+            <input type="checkbox" name="consentDissemination" id="pubConsent" />
+            <span>{CONSENT_DISSEMINATION.checkboxLabel}
+              <span class="field__hint">По желанию. На отношение к вашей заявке это никак не влияет. <a href={withBase(CONSENT_DISSEMINATION.url)} target="_blank" rel="noopener">Прочитать согласие</a></span></span>
+          </label>
+          <div class="restrictions" id="restrictions" hidden>
+            <p class="small"><strong>Вы можете ограничить публикацию</strong> — приют обязан это соблюдать:</p>
+            {CONSENT_DISSEMINATION.restrictions.map((r: { id: string; label: string }) => (
+              <label class="check check--sm"><input type="checkbox" name="restrictions" value={r.id} /><span>{r.label}</span></label>
+            ))}
+            <label class="field">
+              <span class="field__label">Другие условия</span>
+              <input type="text" name="restrictionNote" maxlength="300" placeholder="если есть что добавить" />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn--primary btn--lg btn--block">
+        <Icon name="heart" size={18} /> Отправить заявку
+      </button>
+      <p class="patronage__status" role="status" aria-live="polite"></p>
+      <p class="small muted">
+        Не любите формы? Просто позвоните: <a href={telHref(curator.tel)}>{curator.phone}</a> ({curator.name}) или напишите <a href={config.vk.url} target="_blank" rel="noopener">в группу</a>.
+      </p>
+    </form>
+  </section>
+) : (
+  <section class="patronage patronage--offline" id="patronage">
+    <h2>Стать опекуном {animalName}</h2>
+    <p class="muted">
+      {rub(config.donate.guardianshipMonthly)} в месяц — корм, лечение и уход за одним подопечным.
+      Записаться можно у куратора приюта или в обсуждении «Опекунство» во ВКонтакте.
+    </p>
+    <div class="row">
+      <a class="btn btn--green" href={telHref(curator.tel)}><Icon name="phone" size={16} /> {curator.phone}</a>
+      <a class="btn btn--ghost" href={config.vk.url} target="_blank" rel="noopener"><Icon name="vk" size={16} /> Написать в группу</a>
+    </div>
+  </section>
+)}
+
+<script>
+  const root = document.getElementById('patronage') as HTMLElement | null;
+  const form = root?.querySelector('form') as HTMLFormElement | null;
+  if (root && form) {
+    const status = root.querySelector('.patronage__status') as HTMLElement;
+    const pubConsent = form.querySelector('#pubConsent') as HTMLInputElement | null;
+    const restrictions = form.querySelector('#restrictions') as HTMLElement | null;
+
+    // Блок ограничений показываем, только когда человек разрешил публикацию.
+    pubConsent?.addEventListener('change', () => {
+      if (restrictions) restrictions.hidden = !pubConsent.checked;
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const submit = form.querySelector('button[type=submit]') as HTMLButtonElement;
+
+      const required: [string, string][] = [
+        ['name', 'Напишите, как вас зовут.'],
+        ['contact', 'Оставьте телефон или почту — иначе мы не сможем ответить.'],
+      ];
+      for (const [field, msg] of required) {
+        if (!String(fd.get(field) || '').trim()) {
+          status.textContent = msg;
+          status.className = 'patronage__status is-error';
+          (form.elements.namedItem(field) as HTMLInputElement)?.focus();
+          return;
+        }
+      }
+      if (!fd.get('ageConfirmed') || !fd.get('consentProcessing')) {
+        status.textContent = 'Отметьте оба обязательных пункта — без них мы не имеем права принять заявку.';
+        status.className = 'patronage__status is-error';
+        return;
+      }
+
+      submit.disabled = true;
+      status.textContent = 'Отправляем…';
+      status.className = 'patronage__status';
+
+      try {
+        const res = await fetch(root.dataset.api!, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            name: fd.get('name'),
+            contact: fd.get('contact'),
+            message: fd.get('message') || '',
+            website: fd.get('website') || '',
+            animalId: root.dataset.animalId,
+            animalName: root.dataset.animalName,
+            ageConfirmed: Boolean(fd.get('ageConfirmed')),
+            consentProcessing: Boolean(fd.get('consentProcessing')),
+            consentDissemination: Boolean(fd.get('consentDissemination')),
+            restrictions: fd.getAll('restrictions'),
+            restrictionNote: fd.get('restrictionNote') || '',
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Не удалось отправить заявку');
+        form.innerHTML = `<div class="patronage__done"><strong>Спасибо! Заявка у нас.</strong><p>${data.message || 'Куратор приюта свяжется с вами.'}</p></div>`;
+        (window as any).ym?.((window as any).__ym, 'reachGoal', 'patronage_request');
+      } catch (err: any) {
+        status.textContent = err.message + ' Можно просто позвонить нам — телефон ниже.';
+        status.className = 'patronage__status is-error';
+        submit.disabled = false;
+      }
+    });
+  }
+</script>
+
+<style>
+  .patronage {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px;
+    scroll-margin-top: calc(var(--header-h) + 12px);
+  }
+  .patronage--offline {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .patronage__head h2 {
+    font-size: 1.35rem;
+    margin-bottom: 8px;
+  }
+  .patronage__form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 18px;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .field__label {
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .field__label em,
+  .check em {
+    color: var(--rose);
+    font-style: normal;
+  }
+  .field__hint {
+    display: block;
+    font-weight: 400;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  .field input,
+  .field textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    font: inherit;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .field input:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: var(--green);
+  }
+  .honey {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .consents {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+    background: var(--surface-2);
+  }
+  .check {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    align-items: start;
+    font-size: 0.93rem;
+    cursor: pointer;
+  }
+  .check input {
+    width: 22px;
+    height: 22px;
+    margin: 1px 0 0;
+    accent-color: var(--green);
+  }
+  .check--sm {
+    font-size: 0.9rem;
+  }
+  .optional {
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+  }
+  .restrictions {
+    margin: 10px 0 0 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--surface);
+  }
+  .restrictions p {
+    margin: 0;
+  }
+  .patronage__status {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--ink-2);
+  }
+  .patronage__status.is-error {
+    color: var(--rose);
+    font-weight: 700;
+  }
+  .patronage__done {
+    padding: 18px;
+    border-radius: 12px;
+    background: var(--green-soft);
+    color: var(--green);
+  }
+  .patronage__done p {
+    margin: 6px 0 0;
+    color: var(--ink-2);
+  }
+</style>

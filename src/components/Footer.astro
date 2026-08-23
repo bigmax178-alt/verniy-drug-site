@@ -46,6 +46,8 @@ const year = new Date().getFullYear();
       <span>ИНН {config.donate.org.inn} · ОГРН {config.donate.org.ogrn}</span>
       <a href={withBase('/docs/offer/')}>Оферта пожертвования</a>
       <a href={withBase('/docs/privacy/')}>Персональные данные</a>
+      <a href={withBase('/docs/cookies/')}>Cookie</a>
+      <a href="#" data-cookie-settings>Настройки cookie</a>
       <span class="muted">
         {syncedText ? `Данные из ВКонтакте обновлены ${syncedText} (МСК)` : postsSource === 'seed' ? 'Сайт показывает стартовые данные; после подключения ВКонтакте всё обновляется автоматически' : ''}
       </span>

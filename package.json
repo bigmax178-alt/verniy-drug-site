@@ -8,12 +8,18 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "sync": "node scripts/sync-vk.mjs",
-    "sync:build": "node scripts/sync-vk.mjs && astro build",
-    "seed": "node scripts/import-tilda-seed.mjs"
+    "sync": "node scripts/sync-vk.mjs && node scripts/sync-admin.mjs",
+    "sync:build": "npm run sync && astro build",
+    "seed": "node scripts/import-tilda-seed.mjs",
+    "sync:vk": "node scripts/sync-vk.mjs",
+    "sync:admin": "node scripts/sync-admin.mjs",
+    "admin": "node server/index.mjs",
+    "admin:dev": "COOKIE_SECURE=0 DATA_DIR=./data-runtime node server/index.mjs"
   },
   "dependencies": {
     "astro": "^5.12.0"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }

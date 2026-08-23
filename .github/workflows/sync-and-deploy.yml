@@ -49,11 +49,18 @@ jobs:
           VK_TOKEN: ${{ secrets.VK_TOKEN }}
         run: node scripts/sync-vk.mjs
 
+      # Карточки животных, заведённые приютом в админке. Только публичная часть:
+      # заявки и контакты людей остаются на сервере в РФ и сюда не попадают.
+      - name: Синхронизация с админкой приюта
+        env:
+          ADMIN_API_URL: ${{ vars.ADMIN_API_URL }}
+        run: node scripts/sync-admin.mjs
+
       - name: Сохранить свежие данные в репозиторий
         run: |
           git config user.name "vk-sync bot"
           git config user.email "actions@users.noreply.github.com"
-          git add -A src/data/vk || true
+          git add -A src/data/vk src/data/admin public/media/admin || true
           if ! git diff --cached --quiet; then
             git commit -m "data: синхронизация из ВКонтакте $(date -u +'%Y-%m-%d %H:%M UTC') [skip ci]"
             git push
@@ -65,6 +72,7 @@ jobs:
         env:
           SITE_URL: ${{ vars.SITE_URL }}
           BASE_PATH: ${{ vars.BASE_PATH }}
+          ADMIN_API_URL: ${{ vars.ADMIN_API_URL }}
           CLOUDPAYMENTS_PUBLIC_ID: ${{ secrets.CLOUDPAYMENTS_PUBLIC_ID }}
           YANDEX_METRIKA_ID: ${{ secrets.YANDEX_METRIKA_ID }}
         run: npm run build

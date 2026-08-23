@@ -1,0 +1,130 @@
+---
+// Баннер согласия на аналитику.
+//
+// Отдельного «закона о cookies» в РФ нет, но IP и идентификатор счётчика
+// признаются персональными данными, поэтому Яндекс Метрика не загружается,
+// пока человек не нажмёт «Разрешить». Кнопки «Разрешить» и «Отказаться»
+// одинаково заметны — вариант «отказаться» не должен быть спрятан.
+import config from '../../site.config.mjs';
+import { withBase } from '../lib/format';
+
+const metrikaId = config.yandexMetrikaId;
+---
+<div id="cookieBanner" class="cookie" hidden data-metrika={metrikaId}>
+  <div class="cookie__text">
+    <strong>Немного об аналитике</strong>
+    <p>Приюту помогает понимать, каких животных замечают на сайте, а каких нет. Данные обезличенные. Откажетесь — сайт будет работать точно так же.
+      <a href={withBase('/docs/cookies/')}>Подробнее</a></p>
+  </div>
+  <div class="cookie__actions">
+    <button type="button" class="btn btn--ghost" data-cookie="decline">Отказаться</button>
+    <button type="button" class="btn btn--green" data-cookie="accept">Разрешить</button>
+  </div>
+</div>
+
+<script>
+  const KEY = 'vd-cookie-consent';
+  const banner = document.getElementById('cookieBanner') as HTMLElement | null;
+
+  function loadMetrika(id: string) {
+    if (!id || (window as any).ym) return;
+    (window as any).__ym = Number(id);
+    (function (m: any, e: any, t: string, r: string, i: string) {
+      m[i] =
+        m[i] ||
+        function () {
+          (m[i].a = m[i].a || []).push(arguments);
+        };
+      m[i].l = 1 * (new Date() as any);
+      const k = e.createElement(t);
+      const a = e.getElementsByTagName(t)[0];
+      k.async = 1;
+      k.src = r;
+      a.parentNode.insertBefore(k, a);
+    })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js', 'ym');
+    (window as any).ym(Number(id), 'init', { clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: false });
+  }
+
+  function apply(choice: string | null) {
+    if (choice === 'accept' && banner?.dataset.metrika) loadMetrika(banner.dataset.metrika);
+  }
+
+  if (banner) {
+    const saved = localStorage.getItem(KEY);
+    if (saved) {
+      apply(saved);
+    } else {
+      banner.hidden = false;
+    }
+    banner.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-cookie]');
+      if (!btn) return;
+      const choice = btn.dataset.cookie!;
+      localStorage.setItem(KEY, choice);
+      banner.hidden = true;
+      apply(choice);
+    });
+    // Ссылка «Настройки cookie» в подвале открывает баннер заново.
+    document.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('[data-cookie-settings]')) {
+        e.preventDefault();
+        banner.hidden = false;
+      }
+    });
+  }
+</script>
+
+<style>
+  .cookie {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    z-index: 60;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 720px;
+    margin-inline: auto;
+    padding: 16px 18px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 12px 32px -12px rgba(27, 34, 29, 0.35);
+  }
+  @media (min-width: 900px) {
+    .cookie {
+      bottom: 16px;
+    }
+  }
+  .cookie__text {
+    flex: 1 1 260px;
+  }
+  .cookie__text p {
+    margin: 4px 0 0;
+    font-size: 0.9rem;
+    color: var(--ink-2);
+  }
+  .cookie__actions {
+    display: flex;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+  /* Обе кнопки одного размера: отказаться должно быть так же легко, как согласиться. */
+  .cookie__actions .btn {
+    min-width: 132px;
+    padding: 10px 16px;
+    min-height: 42px;
+  }
+  @media (max-width: 420px) {
+    .cookie__actions {
+      width: 100%;
+    }
+    .cookie__actions .btn {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+</style>

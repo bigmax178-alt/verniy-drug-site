@@ -1,0 +1,27 @@
+---
+import Doc from '../../layouts/Doc.astro';
+import { CONSENT_DISSEMINATION } from '../../../shared/consent.mjs';
+import { withBase } from '../../lib/format';
+---
+<Doc
+  title={CONSENT_DISSEMINATION.title}
+  description="Добровольное согласие опекуна на публикацию имени и фотографии на сайте приюта «Верный друг»."
+  version={CONSENT_DISSEMINATION.version}
+  hash={CONSENT_DISSEMINATION.hash}
+>
+  <div class="notice notice--green">
+    <strong>Это согласие полностью добровольное.</strong> Если вы его не дадите, вы всё равно сможете быть опекуном — просто на сайте будет написано «у животного есть опекун», без имени и фото.
+  </div>
+  <p>Оно оформлено отдельно от <a href={withBase('/docs/consent/')}>согласия на обработку персональных данных</a>, как требует закон: одно согласие — одна галочка.</p>
+  <hr />
+  <p>{CONSENT_DISSEMINATION.text}</p>
+  <hr />
+  <h2>Что вы можете запретить</h2>
+  <p>Закон даёт вам право ограничить публикацию, и приют не вправе вам в этом отказать. В форме заявки можно отметить любое из условий:</p>
+  <ul>
+    {CONSENT_DISSEMINATION.restrictions.map((r: { id: string; label: string }) => <li>{r.label}</li>)}
+  </ul>
+  <p>Можно вписать и своё условие — оно будет соблюдаться наравне с этими.</p>
+  <h2>Если передумали</h2>
+  <p>Достаточно позвонить или написать в сообщения группы. Имя и фотография убираются с сайта в течение трёх рабочих дней. Объяснять причину не нужно.</p>
+</Doc>

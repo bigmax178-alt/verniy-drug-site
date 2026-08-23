@@ -1,0 +1,53 @@
+---
+import Base from './Base.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  version?: string;
+  hash?: string;
+  updated?: string;
+  noindex?: boolean;
+}
+const { title, description, version, hash, updated = '18 августа 2026 г.', noindex = true } = Astro.props;
+---
+<Base title={title} description={description} noindex={noindex}>
+  <section class="section section--tight">
+    <div class="container doc">
+      <div class="eyebrow">Документ</div>
+      <h1>{title}</h1>
+      <p class="muted small doc__meta">
+        Редакция от {updated}.
+        {version && <> Версия <span class="tabular">{version}</span>.</>}
+        {hash && <> Отпечаток текста <span class="tabular">{hash}</span> — по нему можно проверить, что текст не менялся после того, как вы его приняли.</>}
+      </p>
+      <div class="prose doc__body">
+        <slot />
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .doc {
+    max-width: 760px;
+  }
+  .doc h1 {
+    font-size: clamp(1.6rem, 1.2rem + 1.5vw, 2.2rem);
+    margin-bottom: 12px;
+  }
+  .doc__meta {
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .doc__body :global(h2) {
+    font-size: 1.2rem;
+    margin: 1.6em 0 0.5em;
+  }
+  .doc__body :global(p) {
+    white-space: pre-line;
+  }
+  .doc__body :global(ul) {
+    margin-bottom: 1em;
+  }
+</style>

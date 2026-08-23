@@ -4,6 +4,11 @@ import config from '../../site.config.mjs';
 
 export type Photo = { src: string; thumb?: string; w?: number | null; h?: number | null; text?: string };
 
+/** Опекун животного. Имя и фото показываются только при явном согласии человека. */
+export type Patron =
+  | { anonymous: true; since?: string | null }
+  | { anonymous?: false; name: string | null; photo: string | null; note: string | null; since?: string | null };
+
 export type Animal = {
   id: string;
   slug: string;
@@ -16,9 +21,10 @@ export type Animal = {
   description: string;
   traits: string[];
   photos: (string | Photo)[];
+  patron?: Patron | null;
   vkAlbum?: string;
   url?: string;
-  status: 'looking' | 'adopted';
+  status: 'looking' | 'adopted' | 'hidden';
   source: string;
   date?: number | null;
 };
@@ -89,13 +95,44 @@ export const posts: Post[] = (vkPosts && vkPosts.length ? vkPosts : seedPosts).s
 export const postsSource = vkPosts && vkPosts.length ? 'vk' : 'seed';
 
 // ── Животные ────────────────────────────────────────────────────────────────
+// Источников три, и они складываются в таком порядке:
+//   1. ВКонтакте (раздел «Товары») — основной, обновляется сам;
+//   2. стартовые данные со старого сайта — пока ВКонтакте не подключён;
+//   3. админка приюта — правки к карточкам из ВК (source: 'override')
+//      и животные, заведённые руками (source: 'manual'). Она главнее всех:
+//      если человек что-то поправил руками, автоматика это не затирает.
+const adminFiles = import.meta.glob('../data/admin/*.json', { eager: true, import: 'default' }) as Record<string, any>;
+const adminData = Object.keys(adminFiles).find((k) => k.endsWith('/animals.json'))
+  ? (adminFiles[Object.keys(adminFiles).find((k) => k.endsWith('/animals.json'))!] as { animals: Animal[]; updatedAt?: string })
+  : null;
+const adminAnimals: Animal[] = adminData?.animals || [];
+
 const seedAnimals = seed<Animal[]>('animals') || [];
 const vkAnimals = market?.animals || [];
-export const animalsSource = vkAnimals.length ? 'vk' : 'seed';
-export const animals: Animal[] = (vkAnimals.length ? vkAnimals : seedAnimals).map((a) => ({
+const baseAnimals = vkAnimals.length ? vkAnimals : seedAnimals;
+export const animalsSource = vkAnimals.length ? 'vk' : adminAnimals.length ? 'admin' : 'seed';
+export const adminSyncedAt = adminData?.updatedAt || null;
+
+const normalizePhotos = (a: Animal): Animal => ({
   ...a,
-  photos: a.photos.map((p) => (typeof p === 'string' ? { src: p, thumb: p } : p)),
-}));
+  photos: (a.photos || []).map((p) => (typeof p === 'string' ? { src: p, thumb: p } : p)),
+});
+
+function mergeAnimals(base: Animal[], admin: Animal[]): Animal[] {
+  const overrides = new Map(admin.filter((a) => a.source === 'override').map((a) => [a.id, a]));
+  const merged = base.map((a) => {
+    const patch = overrides.get(a.id);
+    if (!patch) return a;
+    overrides.delete(a.id);
+    // Пустые поля правки не затирают то, что пришло из ВКонтакте.
+    const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== null && v !== '' && !(Array.isArray(v) && v.length === 0)));
+    return { ...a, ...clean } as Animal;
+  });
+  // Правки к животным, которых в ВК уже нет, и карточки, заведённые вручную.
+  return [...merged, ...overrides.values(), ...admin.filter((a) => a.source !== 'override')];
+}
+
+export const animals: Animal[] = mergeAnimals(baseAnimals, adminAnimals).map(normalizePhotos).filter((a) => a.status !== 'hidden');
 export const lookingAnimals = animals.filter((a) => a.status === 'looking');
 export const dogs = lookingAnimals.filter((a) => a.kind === 'dog');
 export const cats = lookingAnimals.filter((a) => a.kind === 'cat');

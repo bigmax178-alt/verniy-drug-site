@@ -1,0 +1,23 @@
+---
+import Doc from '../../layouts/Doc.astro';
+import { CONSENT_PROCESSING } from '../../../shared/consent.mjs';
+import { withBase } from '../../lib/format';
+---
+<Doc
+  title={CONSENT_PROCESSING.title}
+  description="Условия, на которых приют «Верный друг» обрабатывает персональные данные людей, оставивших заявку на опекунство."
+  version={CONSENT_PROCESSING.version}
+  hash={CONSENT_PROCESSING.hash}
+>
+  <p>Этот текст вы принимаете, отмечая галочку «{CONSENT_PROCESSING.checkboxLabel}» в форме заявки на опекунство. Отдельно от него даётся согласие на публикацию имени и фото — <a href={withBase('/docs/consent-publication/')}>оно здесь</a> и полностью добровольно.</p>
+  <hr />
+  <p>{CONSENT_PROCESSING.text}</p>
+  <hr />
+  <h2>Коротко, человеческим языком</h2>
+  <ul>
+    <li>Мы просим имя и телефон только чтобы перезвонить вам по заявке.</li>
+    <li>Никому эти данные не передаём и не рассылаем рекламу.</li>
+    <li>Данные лежат на сервере в России и удаляются через год или раньше — как только вопрос решён.</li>
+    <li>Передумали? Позвоните или напишите в группу — удалим в течение 30 дней, как требует закон.</li>
+  </ul>
+</Doc>

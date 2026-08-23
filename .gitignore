@@ -7,3 +7,6 @@ dist/
 .vercel
 .env*
 .claude/
+
+# Данные админки: персональные данные людей, в git им не место
+data-runtime/

@@ -4,6 +4,7 @@ import config from '../../site.config.mjs';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import TabBar from '../components/TabBar.astro';
+import CookieBanner from '../components/CookieBanner.astro';
 import { withBase } from '../lib/format';
 
 interface Props {
@@ -69,17 +70,7 @@ const ld = [orgLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : []
     <link rel="preload" href={withBase('/fonts/ptsans-400-cyr.woff2')} as="font" type="font/woff2" crossorigin />
     <link rel="alternate" type="application/rss+xml" title={`Новости приюта «${config.name}»`} href={withBase('/rss.xml')} />
     <script type="application/ld+json" set:html={JSON.stringify(ld)} />
-    {config.yandexMetrikaId && (
-      <script is:inline define:vars={{ id: config.yandexMetrikaId }}>
-        (function (m, e, t, r, i, k, a) {
-          m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments); };
-          m[i].l = 1 * new Date();
-          k = e.createElement(t); a = e.getElementsByTagName(t)[0]; k.async = 1; k.src = r; a.parentNode.insertBefore(k, a);
-        })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js', 'ym');
-        window.__ym = id;
-        ym(id, 'init', { clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: false });
-      </script>
-    )}
+    {/* Счётчик здесь не подключается: он загружается только после согласия — см. CookieBanner. */}
   </head>
   <body class={`has-tabbar ${bodyClass}`.trim()}>
     <a class="skip-link" href="#main">К содержимому</a>
@@ -89,6 +80,7 @@ const ld = [orgLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : []
     </main>
     <Footer />
     <TabBar />
+    <CookieBanner />
     <script>
       // Кнопки «Скопировать» и цели Метрики. Без фреймворков — чтобы страница помощи открывалась мгновенно.
       document.addEventListener('click', async (e) => {
