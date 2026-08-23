@@ -119,7 +119,7 @@ export function animalsPage({ session, data, newApplications = 0, flash = '' }) 
 
 // ── форма животного ─────────────────────────────────────────────────────────
 
-export function animalFormPage({ session, animal, errors = [] }) {
+export function animalFormPage({ session, animal, errors = [], personalData = true }) {
   const a = animal || {};
   const isNew = !animal?.id;
   const photos = Array.isArray(a.photos) ? a.photos : [];
@@ -208,8 +208,15 @@ export function animalFormPage({ session, animal, errors = [] }) {
 
             <fieldset>
               <legend>Опекун</legend>
-              <p class="small muted" style="margin-top:0">Заполняйте, если у животного есть постоянный опекун. Имя и фото — персональные данные: публиковать их можно <strong>только</strong> с отдельного согласия человека.</p>
-              <label><span class="lbl">Имя опекуна</span>
+              ${
+                personalData
+                  ? '<p class="small muted" style="margin-top:0">Заполняйте, если у животного есть постоянный опекун. Имя и фото — персональные данные: публиковать их можно <strong>только</strong> с отдельного согласия человека.</p>'
+                  : `<div class="notice notice--warn" style="margin:0 0 14px">
+                       <strong>Имя и фото опекуна здесь сохранить нельзя.</strong>
+                       <p class="small" style="margin:6px 0 0">Это персональные данные, а закон требует хранить их в базе на территории России (ч. 5 ст. 18 152-ФЗ). Сейчас админка работает на зарубежном сервере, поэтому доступна только пометка «у животного есть опекун» — она персональными данными не является. Имена и фотографии появятся, когда админку перенесут на российский сервер.</p>
+                     </div>`
+              }
+${personalData ? `              <label><span class="lbl">Имя опекуна</span>
                 <input type="text" name="patronName" value="${esc(patron.name || '')}" maxlength="80" placeholder="Вадим М.">
                 <span class="hint">Как человек сам попросил себя назвать</span></label>
               <label><span class="lbl">Подпись от опекуна</span>
@@ -231,7 +238,11 @@ export function animalFormPage({ session, animal, errors = [] }) {
                 <label style="margin:12px 0 0"><span class="lbl">Где и когда получено согласие *</span>
                   <input type="text" name="patronConsentRef" value="${esc(patron.consentRef || '')}" maxlength="120" placeholder="напр.: письменно 12.05.2026 / скрин переписки ВК от 12.05.2026">
                   <span class="hint">Обязательно при публикации: это ваше доказательство согласия. Текст согласия — <a href="/admin/consent-text" target="_blank">здесь</a>.</span></label>
-              </div>
+              </div>` : `
+              <label class="checkbox" style="margin:0">
+                <input type="checkbox" name="patronName" value="есть" ${patron.name || patron.anonymous ? 'checked' : ''}>
+                <span>У животного есть опекун <span class="hint">На сайте появится строка «у животного есть опекун», без имени.</span></span>
+              </label>`}
             </fieldset>
           </div>
         </div>
