@@ -14,7 +14,15 @@
     "sync:vk": "node scripts/sync-vk.mjs",
     "sync:admin": "node scripts/sync-admin.mjs",
     "admin": "node server/index.mjs",
-    "admin:dev": "COOKIE_SECURE=0 DATA_DIR=./data-runtime node server/index.mjs"
+    "admin:dev": "COOKIE_SECURE=0 DATA_DIR=./data-runtime node server/index.mjs",
+    "dev:local": "ADMIN_API_URL=http://localhost:8787 astro dev",
+    "build:local": "ADMIN_API_URL=http://localhost:8787 astro build",
+    "preview:local": "ADMIN_API_URL=http://localhost:8787 astro build && astro preview",
+    "admin:status": "launchctl list | grep verniy-drug || echo 'служба не запущена'",
+    "admin:log": "tail -f ~/Library/Logs/verniy-drug-admin.log",
+    "admin:stop": "launchctl unload ~/Library/LaunchAgents/ru.verniy-drug.admin.plist && echo остановлена",
+    "admin:start": "launchctl load ~/Library/LaunchAgents/ru.verniy-drug.admin.plist && echo запущена",
+    "admin:backup": "tar czf \"$HOME/Desktop/verniy-drug-backup-$(date +%F).tar.gz\" -C \"$HOME/Library/Application Support\" verniy-drug && echo 'архив на рабочем столе'"
   },
   "dependencies": {
     "astro": "^5.12.0"
