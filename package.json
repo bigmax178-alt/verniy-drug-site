@@ -22,7 +22,8 @@
     "admin:log": "tail -f ~/Library/Logs/verniy-drug-admin.log",
     "admin:stop": "launchctl unload ~/Library/LaunchAgents/ru.verniy-drug.admin.plist && echo остановлена",
     "admin:start": "launchctl load ~/Library/LaunchAgents/ru.verniy-drug.admin.plist && echo запущена",
-    "admin:backup": "tar czf \"$HOME/Desktop/verniy-drug-backup-$(date +%F).tar.gz\" -C \"$HOME/Library/Application Support\" verniy-drug && echo 'архив на рабочем столе'"
+    "admin:backup": "tar czf \"$HOME/Desktop/verniy-drug-backup-$(date +%F).tar.gz\" -C \"$HOME/Library/Application Support\" verniy-drug && echo 'архив на рабочем столе'",
+    "tunnel": "node scripts/tunnel.mjs"
   },
   "dependencies": {
     "astro": "^5.12.0"
