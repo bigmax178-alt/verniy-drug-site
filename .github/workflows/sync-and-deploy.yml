@@ -20,7 +20,7 @@ on:
     branches: [main]
   workflow_dispatch:
   repository_dispatch:
-    types: [vk-update]
+    types: [vk-update, admin-update]
 
 permissions:
   contents: write
