@@ -1,5 +1,59 @@
 {
  "version": 1,
- "updatedAt": "2026-08-23T13:34:48.703Z",
- "animals": []
+ "updatedAt": "2026-08-24T13:01:47.095Z",
+ "animals": [
+  {
+   "id": "seed-ben",
+   "source": "override",
+   "slug": "ben",
+   "name": "Бен",
+   "kind": "dog",
+   "sex": "m",
+   "count": 1,
+   "birthYear": 2020,
+   "ageText": null,
+   "description": "Отредактировано через админку: Бен знает команды и отлично ладит с людьми.",
+   "traits": [
+    "вакцинация",
+    "поводок"
+   ],
+   "photos": [],
+   "patron": null,
+   "status": "looking",
+   "vkAlbum": null,
+   "url": null,
+   "createdAt": "2026-08-24T12:59:30.210Z",
+   "updatedAt": "2026-08-24T12:59:30.210Z"
+  },
+  {
+   "id": "manual-KIcbSzgz",
+   "source": "manual",
+   "slug": "testovaya-publikatsiya",
+   "name": "Тестовая публикация",
+   "kind": "dog",
+   "sex": null,
+   "count": 1,
+   "birthYear": null,
+   "ageText": null,
+   "description": "",
+   "traits": [],
+   "photos": [
+    {
+     "src": "/media/admin/788cada2d7a8e6fe.jpg",
+     "thumb": "/media/admin/788cada2d7a8e6fe.jpg"
+    }
+   ],
+   "patron": {
+    "name": "Секретное Имя",
+    "photo": null,
+    "note": null,
+    "since": "2026-08-24"
+   },
+   "status": "looking",
+   "vkAlbum": null,
+   "url": null,
+   "createdAt": "2026-08-24T13:00:22.735Z",
+   "updatedAt": "2026-08-24T13:00:22.735Z"
+  }
+ ]
 }
