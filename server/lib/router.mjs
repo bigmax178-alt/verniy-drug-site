@@ -337,7 +337,16 @@ export function createRouter({ store, auth, features = {} }) {
     if (p === '/admin' && method === 'GET') {
       const data = await store.getAnimals();
       const apps = await store.listApplications();
-      return sendHtml(res, 200, views.animalsPage({ session, data, newApplications: apps.filter((a) => a.status === 'new').length, flash: url.searchParams.get('ok') }));
+      // Животные, которые уже на сайте (из ВКонтакте или со старого сайта) и которых
+      // ещё никто не правил: показываем их тоже, чтобы карточку можно было открыть.
+      const siteAnimals = (await store.listSiteAnimals?.()) || [];
+      const known = new Set(data.animals.map((a) => a.id));
+      const editable = siteAnimals.filter((a) => !known.has(a.id));
+      return sendHtml(
+        res,
+        200,
+        views.animalsPage({ session, data, siteAnimals: editable, newApplications: apps.filter((a) => a.status === 'new').length, flash: url.searchParams.get('ok') }),
+      );
     }
 
     // Форма нового животного.
@@ -349,8 +358,15 @@ export function createRouter({ store, auth, features = {} }) {
     const editMatch = /^\/admin\/animal\/([\w.-]+)$/.exec(p);
     if (editMatch && method === 'GET') {
       const data = await store.getAnimals();
-      const animal = data.animals.find((a) => a.id === editMatch[1]);
-      if (!animal) return sendHtml(res, 404, views.errorPage('Карточка не найдена.'));
+      let animal = data.animals.find((a) => a.id === editMatch[1]);
+      if (!animal) {
+        // Своей записи нет — возможно, это животное с сайта. Открываем его данные,
+        // а при сохранении появится правка (source: 'override'), исходник не трогаем.
+        const siteAnimals = (await store.listSiteAnimals?.()) || [];
+        const base = siteAnimals.find((a) => a.id === editMatch[1]);
+        if (!base) return sendHtml(res, 404, views.errorPage('Карточка не найдена.'));
+        animal = { ...base, source: 'override' };
+      }
       return sendHtml(res, 200, views.animalFormPage({ session, animal, personalData }));
     }
 
@@ -359,7 +375,12 @@ export function createRouter({ store, auth, features = {} }) {
       const form = await readForm(req, 2 * 1024 * 1024);
       if (!requireCsrf(session, form.csrf, res)) return;
       const data = await store.getAnimals();
-      const existing = data.animals.find((a) => a.id === editMatch[1]) || null;
+      let existing = data.animals.find((a) => a.id === editMatch[1]) || null;
+      if (!existing && editMatch[1] !== 'new') {
+        const siteAnimals = (await store.listSiteAnimals?.()) || [];
+        const base = siteAnimals.find((a) => a.id === editMatch[1]);
+        if (base) existing = { ...base, source: 'override' };
+      }
       const input = {
         ...form,
         traits: parseJsonArray(form.traits, existing?.traits || []),
@@ -448,28 +469,34 @@ export function createRouter({ store, auth, features = {} }) {
     if (p === '/admin/publish') {
       if (method === 'GET') {
         const data = await store.getAnimals();
-        return sendHtml(res, 200, views.publishPage({ session, data, configured: Boolean(process.env.PUBLISH_URL), flash: url.searchParams.get('ok'), error: url.searchParams.get('err') }));
+        return sendHtml(
+          res,
+          200,
+          views.publishPage({
+            session,
+            data,
+            // Публиковать можно, если умеем класть карточки в репозиторий сайта,
+            // либо если админка сама в нём живёт (Vercel).
+            configured: Boolean(process.env.GITHUB_REPO && (process.env.PUBLISH_TOKEN || process.env.GITHUB_TOKEN)),
+            selfPublishing: !personalData,
+            flash: url.searchParams.get('ok'),
+            error: url.searchParams.get('err'),
+          }),
+        );
       }
       if (method === 'POST') {
         const form = await readForm(req);
         if (!requireCsrf(session, form.csrf, res)) return;
-        if (!process.env.PUBLISH_URL) return redirect(res, '/admin/publish?err=' + encodeURIComponent('Публикация не настроена: не задан PUBLISH_URL'));
         try {
-          const r = await fetch(process.env.PUBLISH_URL, {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json',
-              accept: 'application/vnd.github+json',
-              ...(process.env.PUBLISH_TOKEN ? { authorization: `Bearer ${process.env.PUBLISH_TOKEN}` } : {}),
-              'user-agent': 'verniy-drug-admin',
-            },
-            body: JSON.stringify({ event_type: 'admin-update' }),
-          });
-          await store.audit('publish_triggered', { by: session.login, status: r.status });
-          if (!r.ok) return redirect(res, '/admin/publish?err=' + encodeURIComponent(`Сервер публикации ответил ${r.status}`));
-          return redirect(res, '/admin/publish?ok=' + encodeURIComponent('Обновление отправлено. Сайт обновится через 2–3 минуты.'));
+          const data = await store.getAnimals();
+          // В репозиторий уезжает только публичная часть: имя и фото опекуна
+          // остаются на этом компьютере, наружу идёт лишь пометка, что опекун есть.
+          const count = await store.publishAnimalsToRepo(data.animals.filter((a) => a.status !== 'hidden').map(toPublicAnimal));
+          await store.audit('publish', { by: session.login, count });
+          return redirect(res, '/admin/publish?ok=' + encodeURIComponent(`Опубликовано карточек: ${count}. Сайт обновится через 2–3 минуты.`));
         } catch (e) {
-          return redirect(res, '/admin/publish?err=' + encodeURIComponent('Не удалось связаться с сервером публикации: ' + e.message));
+          await store.audit('publish_failed', { by: session.login, error: e.message });
+          return redirect(res, '/admin/publish?err=' + encodeURIComponent(e.message));
         }
       }
     }

@@ -232,3 +232,111 @@ export async function deleteMedia(name) {
     return false;
   }
 }
+
+// ── животные, которые уже есть на сайте ─────────────────────────────────────
+// Приходят из ВКонтакте или со старого сайта. Админка показывает их, чтобы
+// карточку можно было поправить: правка сохраняется отдельной записью
+// с source: 'override', а исходные данные остаются нетронутыми.
+
+const REPO_DIR = path.resolve(process.env.REPO_DIR || process.cwd());
+
+export async function listSiteAnimals() {
+  const vk = await readJsonFile(path.join(REPO_DIR, 'src/data/vk/market.json'), null);
+  if (vk?.animals?.length) return vk.animals;
+  const seed = await readJsonFile(path.join(REPO_DIR, 'data/seed/animals.json'), null);
+  return Array.isArray(seed) ? seed : [];
+}
+
+// ── публикация карточек на сайт ─────────────────────────────────────────────
+// Сайт собирается из репозитория, поэтому «Опубликовать» кладёт туда публичную
+// часть карточек. Персональные данные опекунов при этом снимаются: в репозиторий
+// (он публичный и за границей) уходит только пометка, что опекун есть.
+
+async function ghRequest(repo, token, pathname, options = {}) {
+  const res = await fetch(`https://api.github.com/repos/${repo}/${pathname}`, {
+    ...options,
+    headers: {
+      accept: 'application/vnd.github+json',
+      authorization: `Bearer ${token}`,
+      'user-agent': 'verniy-drug-admin',
+      'x-github-api-version': '2022-11-28',
+      ...(options.headers || {}),
+    },
+  });
+  return res;
+}
+
+export async function publishAnimalsToRepo(publicAnimals) {
+  const repo = process.env.GITHUB_REPO;
+  const token = process.env.PUBLISH_TOKEN || process.env.GITHUB_TOKEN;
+  const branch = process.env.GITHUB_BRANCH || 'main';
+  if (!repo || !token) {
+    throw Object.assign(new Error('Публикация не настроена: нужны GITHUB_REPO и PUBLISH_TOKEN.'), { statusCode: 400 });
+  }
+
+  // Фотографии лежат на этом компьютере, поэтому вместе с карточками кладём в
+  // репозиторий и сами файлы, а ссылки переписываем на их будущий адрес на сайте.
+  const uploaded = new Map();
+  async function publishPhoto(url) {
+    if (!url || !url.startsWith('/media/')) return url;
+    const name = url.slice('/media/'.length);
+    if (uploaded.has(name)) return uploaded.get(name);
+    let buffer;
+    try {
+      buffer = await fs.readFile(mediaPath(name));
+    } catch {
+      return null; // файла нет — лучше карточка без фото, чем битая картинка
+    }
+    const target = `public/media/admin/${name}`;
+    const head = await ghRequest(repo, token, `contents/${target}?ref=${encodeURIComponent(branch)}`);
+    if (head.status === 404) {
+      const put = await ghRequest(repo, token, `contents/${target}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ message: `admin: фотография ${name}`, content: buffer.toString('base64'), branch }),
+      });
+      if (!put.ok) {
+        const text = await put.text().catch(() => '');
+        throw Object.assign(new Error(`Не удалось загрузить фото: GitHub ${put.status} ${text.slice(0, 120)}`), { statusCode: 502 });
+      }
+    }
+    const publicUrl = `/media/admin/${name}`;
+    uploaded.set(name, publicUrl);
+    return publicUrl;
+  }
+
+  const animals = [];
+  for (const a of publicAnimals) {
+    const photos = [];
+    for (const ph of a.photos || []) {
+      const src = await publishPhoto(ph.src);
+      if (!src) continue;
+      const thumb = ph.thumb && ph.thumb !== ph.src ? await publishPhoto(ph.thumb) : src;
+      photos.push({ ...ph, src, thumb: thumb || src });
+    }
+    let patron = a.patron || null;
+    if (patron && !patron.anonymous && patron.photo) patron = { ...patron, photo: await publishPhoto(patron.photo) };
+    animals.push({ ...a, photos, patron });
+  }
+
+  const filePath = 'src/data/admin/animals.json';
+  const head = await ghRequest(repo, token, `contents/${filePath}?ref=${encodeURIComponent(branch)}`);
+  const sha = head.ok ? (await head.json()).sha : undefined;
+
+  const body = JSON.stringify({ version: 1, updatedAt: new Date().toISOString(), animals }, null, 1);
+  const res = await ghRequest(repo, token, `contents/${filePath}`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      message: `admin: публикация карточек (${animals.length})`,
+      content: Buffer.from(body).toString('base64'),
+      branch,
+      ...(sha ? { sha } : {}),
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw Object.assign(new Error(`GitHub ответил ${res.status}: ${text.slice(0, 150)}`), { statusCode: 502 });
+  }
+  return animals.length;
+}

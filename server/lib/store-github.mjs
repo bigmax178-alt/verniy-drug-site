@@ -177,3 +177,32 @@ export async function audit(action, details = {}) {
 export async function listAudit() {
   return [];
 }
+
+// ── животные, которые уже есть на сайте ─────────────────────────────────────
+// Нужны, чтобы админка показывала и давала править карточки из ВКонтакте
+// и со старого сайта, а не только заведённые вручную.
+
+export async function listSiteAnimals() {
+  const vk = await getFile('src/data/vk/market.json');
+  if (vk) {
+    try {
+      const data = JSON.parse(vk.content.toString('utf8'));
+      if (data.animals?.length) return data.animals;
+    } catch {
+      /* повреждён — идём к запасному источнику */
+    }
+  }
+  const seed = await getFile('data/seed/animals.json');
+  if (!seed) return [];
+  try {
+    const data = JSON.parse(seed.content.toString('utf8'));
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Здесь карточки и так лежат в репозитории — публиковать отдельно нечего. */
+export async function publishAnimalsToRepo() {
+  return 0;
+}

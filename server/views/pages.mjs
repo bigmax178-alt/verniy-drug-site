@@ -67,26 +67,31 @@ export function errorPage(message) {
 
 // ── список животных ─────────────────────────────────────────────────────────
 
-export function animalsPage({ session, data, newApplications = 0, flash = '' }) {
+export function animalsPage({ session, data, siteAnimals = [], newApplications = 0, flash = '' }) {
   const animals = [...data.animals].sort((a, b) => (a.status === b.status ? a.name.localeCompare(b.name, 'ru') : a.status === 'looking' ? -1 : 1));
-  const tiles = animals
-    .map((a) => {
-      const photo = a.photos?.[0];
-      const patron = a.patron ? (a.patron.publish ? `<span class="pill pill--green">Опекун: ${esc(a.patron.name || 'есть')}</span>` : '<span class="pill">Опекун (не публикуется)</span>') : '';
-      return `<a class="animal-tile" href="/admin/animal/${esc(a.id)}">
-        ${photo ? `<img src="${esc(photo.thumb || photo.src)}" alt="">` : '<img alt="" src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E">'}
-        <div class="body">
-          <div class="name">${esc(a.name)}</div>
-          <div class="small muted">${esc(KIND_LABEL[a.kind] || a.kind)}${a.sex ? ' · ' + esc(SEX_LABEL[a.sex]) : ''}${a.birthYear ? ' · ' + a.birthYear + ' г.' : ''}</div>
-          <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">
-            <span class="pill ${a.status === 'looking' ? 'pill--green' : a.status === 'hidden' ? 'pill--rose' : ''}">${esc(STATUS_LABEL[a.status] || a.status)}</span>
-            ${a.source === 'override' ? '<span class="pill">из ВКонтакте</span>' : ''}
-            ${patron}
-          </div>
+  const tile = (a, fromSite = false) => {
+    const photo = a.photos?.[0];
+    const patron = a.patron
+      ? a.patron.publish
+        ? `<span class="pill pill--green">Опекун: ${esc(a.patron.name || 'есть')}</span>`
+        : '<span class="pill">Опекун есть</span>'
+      : '';
+    return `<a class="animal-tile" href="/admin/animal/${esc(a.id)}">
+      ${photo ? `<img src="${esc(photo.thumb || photo.src)}" alt="">` : '<img alt="" src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E">'}
+      <div class="body">
+        <div class="name">${esc(a.name)}</div>
+        <div class="small muted">${esc(KIND_LABEL[a.kind] || a.kind)}${a.sex ? ' · ' + esc(SEX_LABEL[a.sex]) : ''}${a.birthYear ? ' · ' + a.birthYear + ' г.' : ''}</div>
+        <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">
+          <span class="pill ${a.status === 'looking' ? 'pill--green' : a.status === 'hidden' ? 'pill--rose' : ''}">${esc(STATUS_LABEL[a.status] || a.status)}</span>
+          ${a.source === 'override' ? '<span class="pill pill--amber">с правками</span>' : ''}
+          ${fromSite ? '<span class="pill">с сайта</span>' : ''}
+          ${patron}
         </div>
-      </a>`;
-    })
-    .join('');
+      </div>
+    </a>`;
+  };
+  const tiles = animals.map((a) => tile(a)).join('');
+  const siteTiles = siteAnimals.map((a) => tile(a, true)).join('');
 
   return page({
     title: 'Животные',
@@ -106,14 +111,26 @@ export function animalsPage({ session, data, newApplications = 0, flash = '' }) 
       </div>
       ${
         animals.length
-          ? `<div class="grid grid--cards">${tiles}</div>
-             <p class="muted small" style="margin-top:18px">Изменения появятся на сайте после нажатия «Опубликовать» на вкладке <a href="/admin/publish">Публикация</a>.</p>`
-          : `<div class="card card--soft">
-               <h3>Пока пусто — и это нормально</h3>
-               <p class="small">Если приют ведёт животных в разделе «Товары» ВКонтакте, они уже показываются на сайте автоматически. Добавляйте карточки здесь, только если хотите завести животное вручную или дополнить то, что есть в группе.</p>
-               <a class="btn btn--primary" href="/admin/animal/new">Добавить первое животное</a>
+          ? `<h2 style="font-size:1.1rem;margin-bottom:10px">Заведены и отредактированы вами</h2>
+             <div class="grid grid--cards">${tiles}</div>`
+          : ''
+      }
+      ${
+        siteAnimals.length
+          ? `<h2 style="font-size:1.1rem;margin:${animals.length ? '28px' : '0'} 0 4px">Уже на сайте</h2>
+             <p class="muted small" style="margin:0 0 12px">Пришли из ВКонтакте или со старого сайта. Нажмите, чтобы поправить — исходные данные останутся нетронутыми.</p>
+             <div class="grid grid--cards">${siteTiles}</div>`
+          : ''
+      }
+      ${
+        !animals.length && !siteAnimals.length
+          ? `<div class="card card--soft">
+               <h3>Пока пусто</h3>
+               <p class="small">Добавьте первое животное — или подключите ВКонтакте, и карточки появятся сами из раздела «Товары».</p>
+               <a class="btn btn--primary" href="/admin/animal/new">Добавить животное</a>
              </div>`
-      }`,
+          : `<p class="muted small" style="margin-top:18px">Чтобы изменения увидели посетители, нажмите «Опубликовать» на вкладке <a href="/admin/publish">Публикация</a>.</p>`
+            }`,
   });
 }
 
@@ -449,7 +466,8 @@ export function consentsPage({ session, consents }) {
 
 // ── публикация ──────────────────────────────────────────────────────────────
 
-export function publishPage({ session, data, configured, flash = '', error = '' }) {
+export function publishPage({ session, data, configured, selfPublishing = false, flash = '', error = '' }) {
+  const count = data.animals.filter((a) => a.status !== 'hidden').length;
   return page({
     title: 'Публикация',
     session,
@@ -460,16 +478,25 @@ export function publishPage({ session, data, configured, flash = '', error = '' 
       ${notice(error, 'error')}
       <h1>Публикация на сайт</h1>
       <div class="card" style="margin-top:14px">
-        <p>Карточек в админке: <strong>${data.animals.length}</strong>.<br>
+        <p>Карточек к публикации: <strong>${count}</strong>.<br>
         Последнее изменение: <strong>${fmtDate(data.updatedAt)}</strong>.</p>
         ${
-          configured
-            ? `<form method="post">
-                 <input type="hidden" name="csrf" value="${esc(session.csrf)}">
-                 <button class="btn btn--primary" type="submit">Опубликовать изменения</button>
-               </form>
-               <p class="small muted" style="margin-top:10px">Сайт пересоберётся за 2–3 минуты. Ещё он обновляется сам каждые полчаса, так что если забудете нажать — изменения всё равно появятся.</p>`
-            : `<div class="notice notice--warn" style="margin:0">Кнопка публикации не настроена: не задан <code>PUBLISH_URL</code>. Сайт всё равно подтянет изменения при ближайшем автоматическом обновлении (раз в полчаса).</div>`
+          selfPublishing
+            ? `<div class="notice" style="margin:0">Здесь публиковать ничего не нужно: карточки сохраняются сразу в сайт, обновление занимает 2–3 минуты.</div>`
+            : configured
+              ? `<form method="post">
+                   <input type="hidden" name="csrf" value="${esc(session.csrf)}">
+                   <button class="btn btn--primary" type="submit">Опубликовать на сайт</button>
+                 </form>
+                 <p class="small muted" style="margin-top:10px">Карточки и фотографии уедут на сайт, он пересоберётся за 2–3 минуты.</p>
+                 <p class="small muted">Про опекунов: если у карточки стоит галочка «показывать на сайте» — значит согласие получено, и имя с фотографией
+                 публикуются, это и есть их цель. Если галочки нет, наружу уходит только пометка «у животного есть опекун», а имя
+                 <strong>остаётся на этом компьютере</strong>. Заявки и контакты людей не публикуются никогда.</p>`
+              : `<div class="notice notice--warn" style="margin:0">
+                   <strong>Публикация не настроена.</strong>
+                   <p class="small" style="margin:6px 0 0">Нужны GITHUB_REPO и PUBLISH_TOKEN в файле
+                   <code>~/Library/Application Support/verniy-drug/env.sh</code>. Как их получить — в server/README.md.</p>
+                 </div>`
         }
       </div>`,
   });
