@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-08-25T12:02:09.479Z",
+ "updatedAt": "2026-08-25T12:10:57.896Z",
  "animals": [
   {
    "id": "manual-hIC8UkAR",
@@ -8,16 +8,12 @@
    "slug": "boss",
    "name": "Босс",
    "kind": "dog",
-   "sex": "m",
+   "sex": null,
    "count": 1,
-   "birthYear": 2020,
+   "birthYear": null,
    "ageText": null,
    "description": "Добрый, ласковый пёс, был найден на новоприозерском шоссе и отправлен к нам в приют",
-   "traits": [
-    "стерилизация",
-    "дружит с кошками",
-    "дружит с собаками"
-   ],
+   "traits": [],
    "photos": [
     {
      "src": "/media/admin/b42efbe406b48f22.jpg",
@@ -36,7 +32,7 @@
    "vkAlbum": null,
    "url": null,
    "createdAt": "2026-08-24T12:12:59.178Z",
-   "updatedAt": "2026-08-24T12:51:45.995Z"
+   "updatedAt": "2026-08-25T12:10:57.806Z"
   },
   {
    "id": "seed-ben",
