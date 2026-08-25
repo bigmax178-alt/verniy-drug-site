@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-08-25T12:01:00.439Z",
+ "updatedAt": "2026-08-25T12:02:09.479Z",
  "animals": [
   {
    "id": "manual-hIC8UkAR",
@@ -42,7 +42,7 @@
    "id": "seed-ben",
    "source": "override",
    "slug": "ben",
-   "name": "Вен",
+   "name": "Бен",
    "kind": "dog",
    "sex": "m",
    "count": 1,
@@ -59,7 +59,7 @@
    "vkAlbum": "https://vk.com/album-48859748_280191822",
    "url": null,
    "createdAt": "2026-08-25T12:00:50.295Z",
-   "updatedAt": "2026-08-25T12:00:50.295Z"
+   "updatedAt": "2026-08-25T12:02:04.486Z"
   }
  ]
 }
