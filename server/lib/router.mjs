@@ -391,13 +391,23 @@ export function createRouter({ store, auth, features = {} }) {
       if (!result.ok) {
         return sendHtml(res, 400, views.animalFormPage({ session, animal: { ...(existing || {}), ...input, id: editMatch[1] }, errors: result.errors, personalData }));
       }
-      // Там, где база вне России, имя и фото опекуна не сохраняются вовсе —
-    // остаётся только пометка, что опекун есть. Сам факт опеки персональными
-    // данными не является, а имя и фото — являются.
-    const toSave = personalData
-      ? result.animal
-      : { ...result.animal, patron: result.animal.patron ? { anonymous: true, since: result.animal.patron.since } : null };
-    await store.upsertAnimal(toSave);
+      // Там, где база вне России, вводить имя и фото опекуна нельзя: остаётся
+      // только пометка, что опекун есть. Но если имя уже заведено там, где это
+      // разрешено (на компьютере приюта), сохранение здесь его не стирает —
+      // иначе правка клички молча уничтожала бы данные опекуна.
+      let toSave = result.animal;
+      if (!personalData) {
+        const previous = existing?.patron || null;
+        toSave = {
+          ...result.animal,
+          patron: !result.animal.patron
+            ? null
+            : previous && (previous.name || previous.photo)
+              ? previous
+              : { anonymous: true, since: result.animal.patron.since },
+        };
+      }
+      await store.upsertAnimal(toSave);
       await store.audit('animal_saved', { by: session.login, id: toSave.id, name: toSave.name });
       return redirect(res, `/admin/?ok=${encodeURIComponent(`Карточка «${result.animal.name}» сохранена`)}`);
     }
