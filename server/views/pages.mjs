@@ -67,10 +67,13 @@ export function errorPage(message) {
 
 // ── список животных ─────────────────────────────────────────────────────────
 
-export function animalsPage({ session, data, siteAnimals = [], newApplications = 0, flash = '' }) {
+export function animalsPage({ session, data, siteAnimals = [], allSiteAnimals = siteAnimals, newApplications = 0, flash = '', selfPublishing = false }) {
   const animals = [...data.animals].sort((a, b) => (a.status === b.status ? a.name.localeCompare(b.name, 'ru') : a.status === 'looking' ? -1 : 1));
+  // Правка может не содержать своих фотографий — тогда показываем исходные,
+  // чтобы плитка не выглядела так, будто фото потеряли.
+  const baseById = new Map(allSiteAnimals.map((a) => [a.id, a]));
   const tile = (a, fromSite = false) => {
-    const photo = a.photos?.[0];
+    const photo = a.photos?.[0] || baseById.get(a.id)?.photos?.[0];
     const patron = a.patron
       ? a.patron.publish
         ? `<span class="pill pill--green">Опекун: ${esc(a.patron.name || 'есть')}</span>`
@@ -129,7 +132,9 @@ export function animalsPage({ session, data, siteAnimals = [], newApplications =
                <p class="small">Добавьте первое животное — или подключите ВКонтакте, и карточки появятся сами из раздела «Товары».</p>
                <a class="btn btn--primary" href="/admin/animal/new">Добавить животное</a>
              </div>`
-          : `<p class="muted small" style="margin-top:18px">Чтобы изменения увидели посетители, нажмите «Опубликовать» на вкладке <a href="/admin/publish">Публикация</a>.</p>`
+          : selfPublishing
+            ? `<p class="muted small" style="margin-top:18px">Сохранённые изменения попадают на сайт сами — он обновляется через 2–3 минуты.</p>`
+            : `<p class="muted small" style="margin-top:18px">Чтобы изменения увидели посетители, нажмите «Опубликовать» на вкладке <a href="/admin/publish">Публикация</a>.</p>`
             }`,
   });
 }

@@ -345,7 +345,7 @@ export function createRouter({ store, auth, features = {} }) {
       return sendHtml(
         res,
         200,
-        views.animalsPage({ session, data, siteAnimals: editable, newApplications: apps.filter((a) => a.status === 'new').length, flash: url.searchParams.get('ok') }),
+        views.animalsPage({ session, data, siteAnimals: editable, allSiteAnimals: siteAnimals, selfPublishing: !personalData, newApplications: apps.filter((a) => a.status === 'new').length, flash: url.searchParams.get('ok') }),
       );
     }
 
