@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-08-25T12:10:57.896Z",
+ "updatedAt": "2026-08-25T12:30:06.100Z",
  "animals": [
   {
    "id": "manual-hIC8UkAR",
@@ -56,6 +56,36 @@
    "url": null,
    "createdAt": "2026-08-25T12:00:50.295Z",
    "updatedAt": "2026-08-25T12:02:04.486Z"
+  },
+  {
+   "id": "manual-t7pCSCkl",
+   "source": "manual",
+   "slug": "kot-enot",
+   "name": "КОТ Енот",
+   "kind": "cat",
+   "sex": "m",
+   "count": 1,
+   "birthYear": 2022,
+   "ageText": null,
+   "description": "Добрый",
+   "traits": [],
+   "photos": [
+    {
+     "src": "/media/admin/b2f3098cd06af285.jpg",
+     "thumb": "/media/admin/21f70f8876131f59.jpg",
+     "w": 1024,
+     "h": 1024
+    }
+   ],
+   "patron": {
+    "anonymous": true,
+    "since": "2026-08-25"
+   },
+   "status": "looking",
+   "vkAlbum": null,
+   "url": null,
+   "createdAt": "2026-08-25T12:30:06.009Z",
+   "updatedAt": "2026-08-25T12:30:06.009Z"
   }
  ]
 }
