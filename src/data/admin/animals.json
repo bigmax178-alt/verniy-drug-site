@@ -1,5 +1,65 @@
 {
  "version": 1,
- "updatedAt": "2026-08-24T13:03:12.022Z",
- "animals": []
+ "updatedAt": "2026-08-25T12:01:00.439Z",
+ "animals": [
+  {
+   "id": "manual-hIC8UkAR",
+   "source": "manual",
+   "slug": "boss",
+   "name": "Босс",
+   "kind": "dog",
+   "sex": "m",
+   "count": 1,
+   "birthYear": 2020,
+   "ageText": null,
+   "description": "Добрый, ласковый пёс, был найден на новоприозерском шоссе и отправлен к нам в приют",
+   "traits": [
+    "стерилизация",
+    "дружит с кошками",
+    "дружит с собаками"
+   ],
+   "photos": [
+    {
+     "src": "/media/admin/b42efbe406b48f22.jpg",
+     "thumb": "/media/admin/fb661030712d5086.jpg",
+     "w": 1200,
+     "h": 675
+    }
+   ],
+   "patron": {
+    "name": "Максим А.",
+    "photo": "/media/admin/61357b6d2535611a.jpg",
+    "note": "Присоединяйтесь к опекунству",
+    "since": "18.08.2026"
+   },
+   "status": "looking",
+   "vkAlbum": null,
+   "url": null,
+   "createdAt": "2026-08-24T12:12:59.178Z",
+   "updatedAt": "2026-08-24T12:51:45.995Z"
+  },
+  {
+   "id": "seed-ben",
+   "source": "override",
+   "slug": "ben",
+   "name": "Вен",
+   "kind": "dog",
+   "sex": "m",
+   "count": 1,
+   "birthYear": 2020,
+   "ageText": "2020 г. р.",
+   "description": "Обратите внимание: не ребенок, а чудо!\nВсе понимает, команды знает, без поводка ходит, разве могут быть такие идеальные?\nВакцинирован, кастрирован",
+   "traits": [
+    "стерилизация",
+    "вакцинация"
+   ],
+   "photos": [],
+   "patron": null,
+   "status": "looking",
+   "vkAlbum": "https://vk.com/album-48859748_280191822",
+   "url": null,
+   "createdAt": "2026-08-25T12:00:50.295Z",
+   "updatedAt": "2026-08-25T12:00:50.295Z"
+  }
+ ]
 }
