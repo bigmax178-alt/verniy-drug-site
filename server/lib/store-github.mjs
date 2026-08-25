@@ -206,3 +206,20 @@ export async function listSiteAnimals() {
 export async function publishAnimalsToRepo() {
   return 0;
 }
+
+// ── адрес приёмного сервера заявок ──────────────────────────────────────────
+// Лежит отдельным файлом в репозитории: туннель меняет адрес при каждом
+// переподключении, а пересобирать из-за этого весь сайт незачем.
+
+const BACKEND_PATH = 'src/data/admin/backend.json';
+
+export async function readBackendInfo() {
+  const file = await getFile(BACKEND_PATH);
+  if (!file) return { url: null, updatedAt: null };
+  try {
+    const data = JSON.parse(file.content.toString('utf8'));
+    return { url: data.url || null, updatedAt: data.updatedAt || null };
+  } catch {
+    return { url: null, updatedAt: null };
+  }
+}

@@ -23,8 +23,7 @@ const { animalId, animalName } = Astro.props;
 const api = config.adminApiUrl;
 const curator = config.contacts.find((c) => c.role.includes('куратор')) || config.contacts[0];
 ---
-{api ? (
-  <section class="patronage" id="patronage" data-api={`${api}/api/patronage`} data-animal-id={animalId} data-animal-name={animalName}>
+<section class="patronage" id="patronage" data-api={api ? `${api}/api/patronage` : ''} data-animal-id={animalId} data-animal-name={animalName}>
     <div class="patronage__head">
       <h2>Стать опекуном {animalName}</h2>
       <p class="muted">
@@ -91,26 +90,50 @@ const curator = config.contacts.find((c) => c.role.includes('куратор')) |
         Не любите формы? Просто позвоните: <a href={telHref(curator.tel)}>{curator.phone}</a> ({curator.name}) или напишите <a href={config.vk.url} target="_blank" rel="noopener">в группу</a>.
       </p>
     </form>
-  </section>
-) : (
-  <section class="patronage patronage--offline" id="patronage">
-    <h2>Стать опекуном {animalName}</h2>
-    <p class="muted">
-      {rub(config.donate.guardianshipMonthly)} в месяц — корм, лечение и уход за одним подопечным.
-      Записаться можно у куратора приюта или в обсуждении «Опекунство» во ВКонтакте.
-    </p>
-    <div class="row">
-      <a class="btn btn--green" href={telHref(curator.tel)}><Icon name="phone" size={16} /> {curator.phone}</a>
-      <a class="btn btn--ghost" href={config.vk.url} target="_blank" rel="noopener"><Icon name="vk" size={16} /> Написать в группу</a>
+
+    {/* Показывается, если приём заявок сейчас недоступен: лучше телефон, чем форма в никуда. */}
+    <div class="patronage__offline" hidden>
+      <p class="muted">
+        {rub(config.donate.guardianshipMonthly)} в месяц — корм, лечение и уход за одним подопечным.
+        Записаться можно у куратора приюта или в обсуждении «Опекунство» во ВКонтакте.
+      </p>
+      <div class="row">
+        <a class="btn btn--green" href={telHref(curator.tel)}><Icon name="phone" size={16} /> {curator.phone}</a>
+        <a class="btn btn--ghost" href={config.vk.url} target="_blank" rel="noopener"><Icon name="vk" size={16} /> Написать в группу</a>
+      </div>
     </div>
   </section>
-)}
 
 <script>
   const root = document.getElementById('patronage') as HTMLElement | null;
   const form = root?.querySelector('form') as HTMLFormElement | null;
   if (root && form) {
     const status = root.querySelector('.patronage__status') as HTMLElement;
+    const offlineBlock = root.querySelector('.patronage__offline') as HTMLElement;
+
+    // Куда отправлять заявку. Адрес может быть задан при сборке (постоянный сервер),
+    // а может выясняться на лету — тогда спрашиваем сайт. Пока адрес неизвестен,
+    // форма скрыта: не хочется, чтобы человек заполнил её впустую.
+    let endpoint = root.dataset.api || '';
+    async function resolveEndpoint() {
+      if (endpoint) return endpoint;
+      try {
+        const res = await fetch('/api/backend', { signal: AbortSignal.timeout(6000) });
+        const data = await res.json();
+        if (data?.url) endpoint = data.url.replace(/\/$/, '') + '/api/patronage';
+      } catch {
+        /* приём недоступен — покажем телефон */
+      }
+      return endpoint;
+    }
+
+    (async () => {
+      const ready = await resolveEndpoint();
+      if (!ready) {
+        form.hidden = true;
+        offlineBlock.hidden = false;
+      }
+    })();
     const pubConsent = form.querySelector('#pubConsent') as HTMLInputElement | null;
     const restrictions = form.querySelector('#restrictions') as HTMLElement | null;
 
@@ -147,7 +170,7 @@ const curator = config.contacts.find((c) => c.role.includes('куратор')) |
       status.className = 'patronage__status';
 
       try {
-        const res = await fetch(root.dataset.api!, {
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
@@ -169,7 +192,12 @@ const curator = config.contacts.find((c) => c.role.includes('куратор')) |
         form.innerHTML = `<div class="patronage__done"><strong>Спасибо! Заявка у нас.</strong><p>${data.message || 'Куратор приюта свяжется с вами.'}</p></div>`;
         (window as any).ym?.((window as any).__ym, 'reachGoal', 'patronage_request');
       } catch (err: any) {
-        status.textContent = err.message + ' Можно просто позвонить нам — телефон ниже.';
+        // Сеть могла не ответить — например, приёмный сервер приюта сейчас выключен.
+        // Человек не должен остаться с непонятной технической ошибкой и потерянной заявкой.
+        const offline = err instanceof TypeError || /Failed to fetch|NetworkError|Load failed/i.test(err?.message || '');
+        status.innerHTML = offline
+          ? 'Не удалось отправить заявку — похоже, приём временно недоступен. Пожалуйста, позвоните куратору или напишите в группу, ссылки ниже. Извините за неудобство!'
+          : err.message + ' Можно просто позвонить нам — телефон ниже.';
         status.className = 'patronage__status is-error';
         submit.disabled = false;
       }

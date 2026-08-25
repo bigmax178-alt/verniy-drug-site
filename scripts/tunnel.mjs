@@ -6,9 +6,9 @@
 //
 // Что делает:
 //   1. поднимает туннель к http://localhost:8787;
-//   2. узнаёт выданный адрес (он меняется при каждом запуске);
-//   3. прописывает адрес в Vercel и в переменные GitHub Actions;
-//   4. пересобирает сайт, чтобы форма заявки стучалась по новому адресу.
+//   2. узнаёт выданный адрес (он меняется при каждом переподключении);
+//   3. кладёт адрес в репозиторий — сайт спрашивает его во время работы,
+//      поэтому пересобирать сайт при смене адреса не нужно.
 //
 // Пока туннель работает — заявки приходят на этот компьютер. Закроете окно
 // или выключите Mac — форма на сайте вернётся к телефону куратора.
@@ -17,12 +17,9 @@
 // Cloudflare они только проходят транзитом, но трафик там расшифровывается,
 // поэтому это решение временное — до переезда на сервер в России.
 
-import { spawn, execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { spawn } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
-
-const run = promisify(execFile);
 
 const PORT = process.env.ADMIN_PORT || '8787';
 const CLOUDFLARED = process.env.CLOUDFLARED || path.join(os.homedir(), '.local/bin/cloudflared');
@@ -39,37 +36,51 @@ async function localAdminAlive() {
   }
 }
 
-async function setVercelEnv(url) {
-  // Пересоздаём переменную: значение меняется при каждом запуске туннеля.
-  await run('npx', ['vercel', 'env', 'rm', 'ADMIN_API_URL', 'production', '--yes'], { cwd: process.cwd() }).catch(() => {});
-  const child = spawn('npx', ['vercel', 'env', 'add', 'ADMIN_API_URL', 'production'], { cwd: process.cwd(), stdio: ['pipe', 'pipe', 'pipe'] });
-  child.stdin.write(url);
-  child.stdin.end();
-  await new Promise((resolve) => child.on('close', resolve));
-}
-
-async function setGithubVariable(url) {
-  // Нужна, чтобы плановая сборка забирала карточки животных из админки.
-  await run('gh', ['variable', 'set', 'ADMIN_API_URL', '--repo', REPO, '--body', url], {
-    env: { ...process.env, PATH: `${path.join(os.homedir(), '.local/bin')}:${process.env.PATH}` },
-  }).catch((e) => console.warn('  ! не удалось записать переменную GitHub:', e.message));
-}
-
-async function redeploy() {
-  await run('npx', ['vercel', '--prod', '--yes'], { cwd: process.cwd(), maxBuffer: 10 * 1024 * 1024 });
+/**
+ * Кладёт адрес туннеля в репозиторий отдельным файлом. Сайт спрашивает его во
+ * время работы, поэтому пересобирать всё из-за смены адреса не нужно.
+ */
+async function publishBackendUrl(url) {
+  const repo = process.env.GITHUB_REPO || REPO;
+  const token = process.env.PUBLISH_TOKEN || process.env.GITHUB_TOKEN;
+  if (!token) throw new Error('нет PUBLISH_TOKEN — адрес некуда записать');
+  const filePath = 'src/data/admin/backend.json';
+  const api = `https://api.github.com/repos/${repo}/contents/${filePath}`;
+  const headers = {
+    accept: 'application/vnd.github+json',
+    authorization: `Bearer ${token}`,
+    'user-agent': 'verniy-drug-tunnel',
+    'x-github-api-version': '2022-11-28',
+  };
+  const head = await fetch(`${api}?ref=main`, { headers });
+  const sha = head.ok ? (await head.json()).sha : undefined;
+  const body = JSON.stringify({ url, updatedAt: new Date().toISOString() }, null, 1);
+  const res = await fetch(api, {
+    method: 'PUT',
+    headers: { ...headers, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      message: 'tunnel: адрес приёма заявок',
+      content: Buffer.from(body).toString('base64'),
+      branch: 'main',
+      ...(sha ? { sha } : {}),
+    }),
+  });
+  if (!res.ok) throw new Error(`GitHub ${res.status}`);
 }
 
 async function applyUrl(url) {
   if (url === currentUrl) return;
   currentUrl = url;
   console.log(`\nАдрес туннеля: ${url}`);
-  console.log('Прописываю его в Vercel и GitHub…');
-  await setVercelEnv(url);
-  await setGithubVariable(url);
-  console.log('Пересобираю сайт, чтобы форма заявки знала новый адрес…');
-  await redeploy();
-  console.log('\nГотово. Форма на боевом сайте отправляет заявки на этот компьютер.');
-  console.log('Проверить: https://verniy-drug-site.vercel.app/animals/ben/');
+  try {
+    await publishBackendUrl(url);
+    console.log('Сайт узнает новый адрес в течение минуты — пересборка не нужна.');
+    console.log('Форма заявки на боевом сайте работает и шлёт заявки на этот компьютер.');
+    console.log('Проверить: https://verniy-drug-site.vercel.app/animals/boss/');
+  } catch (e) {
+    console.error('Не удалось сообщить сайту адрес:', e.message);
+    console.error('Заявки с боевого сайта приходить не будут, форма покажет телефон куратора.');
+  }
   console.log('Не закрывайте это окно — туннель живёт, пока оно открыто.\n');
 }
 
@@ -97,9 +108,17 @@ async function main() {
   cf.stdout.on('data', onData);
   cf.stderr.on('data', onData);
 
-  const stop = () => {
-    console.log('\nЗакрываю туннель. Форма на сайте вернётся к телефону куратора.');
+  const stop = async () => {
+    console.log('\nЗакрываю туннель…');
     cf.kill();
+    // Сообщаем сайту, что приём выключен: иначе форма осталась бы висеть
+    // с мёртвым адресом и молча теряла заявки.
+    try {
+      await publishBackendUrl(null);
+      console.log('Форма на сайте вернулась к телефону куратора.');
+    } catch {
+      console.log('Не удалось сообщить сайту об остановке — проверьте вручную.');
+    }
     process.exit(0);
   };
   process.on('SIGINT', stop);

@@ -46,6 +46,17 @@ export default async function handler(req, res) {
     if (!auth.isConfigured()) missing.push('ADMIN_LOGIN', 'ADMIN_PASSWORD_HASH', 'SESSION_SECRET');
     if (missing.length) return sendHtml(res, 503, setupHint([...new Set(missing)]));
 
+    // Адрес приёмного сервера заявок. Сайт спрашивает его во время работы, а не
+    // берёт из сборки: туннель получает новый адрес при каждом переподключении,
+    // и запечённый в страницу адрес молча протухал бы.
+    if (req.method === 'GET' && url.pathname === '/api/backend') {
+      const info = await store.readBackendInfo();
+      return sendJson(res, 200, info, {
+        'access-control-allow-origin': '*',
+        'cache-control': 'public, max-age=30',
+      });
+    }
+
     // Фотография, только что загруженная в админке, ещё не попала в сборку сайта —
     // отдаём её напрямую из репозитория, чтобы предпросмотр работал сразу.
     if (req.method === 'GET' && url.pathname.startsWith('/media/admin/')) {
