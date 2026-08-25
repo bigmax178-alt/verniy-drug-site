@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-08-25T12:31:51.772Z",
+ "updatedAt": "2026-08-25T12:43:34.697Z",
  "animals": [
   {
    "id": "manual-hIC8UkAR",
@@ -13,7 +13,11 @@
    "birthYear": null,
    "ageText": null,
    "description": "Добрый, ласковый пёс, был найден на новоприозерском шоссе и отправлен к нам в приют",
-   "traits": [],
+   "traits": [
+    "стерилизация",
+    "поводок",
+    "дружит с кошками"
+   ],
    "photos": [
     {
      "src": "/media/admin/b42efbe406b48f22.jpg",
@@ -32,7 +36,7 @@
    "vkAlbum": null,
    "url": null,
    "createdAt": "2026-08-24T12:12:59.178Z",
-   "updatedAt": "2026-08-25T12:10:57.806Z"
+   "updatedAt": "2026-08-25T12:43:34.585Z"
   },
   {
    "id": "seed-ben",
