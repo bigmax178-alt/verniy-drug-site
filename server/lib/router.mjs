@@ -383,7 +383,9 @@ export function createRouter({ store, auth, features = {} }) {
       }
       const input = {
         ...form,
-        traits: parseJsonArray(form.traits, existing?.traits || []),
+        // Признаки приходят обычными галочками: одна отмеченная — строка,
+        // несколько — массив, ни одной — поля нет вовсе.
+        traits: Array.isArray(form.traits) ? form.traits : form.traits ? [form.traits] : [],
         photos: parseJsonArray(form.photosJson, existing?.photos || []),
         patronPublish: form.patronPublish === 'on',
       };

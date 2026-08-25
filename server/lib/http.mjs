@@ -33,9 +33,19 @@ export async function readJson(req, limit = MAX_BODY) {
   }
 }
 
+/**
+ * Разбор формы. Повторяющиеся поля (например, несколько отмеченных галочек
+ * с одним именем) складываются в массив, а не затирают друг друга.
+ */
 export async function readForm(req, limit = MAX_BODY) {
   const buf = await readBody(req, limit);
-  return Object.fromEntries(new URLSearchParams(buf.toString('utf8')));
+  const params = new URLSearchParams(buf.toString('utf8'));
+  const out = {};
+  for (const key of new Set(params.keys())) {
+    const values = params.getAll(key);
+    out[key] = values.length > 1 ? values : values[0];
+  }
+  return out;
 }
 
 export function parseCookies(req) {

@@ -150,7 +150,7 @@ export function animalFormPage({ session, animal, errors = [], personalData = tr
   const traitBoxes = TRAIT_OPTIONS.map((t) => {
     const on = (a.traits || []).includes(t);
     return `<label class="checkbox" style="margin:0 14px 8px 0;display:inline-flex">
-      <input type="checkbox" name="traitBox" value="${esc(t)}" ${on ? 'checked' : ''}><span>${esc(t)}</span></label>`;
+      <input type="checkbox" name="traits" value="${esc(t)}" ${on ? 'checked' : ''}><span>${esc(t)}</span></label>`;
   }).join('');
 
   return page({
@@ -165,7 +165,6 @@ export function animalFormPage({ session, animal, errors = [], personalData = tr
       <form method="post" action="/admin/animal/${esc(a.id || 'new')}" id="animalForm">
         <input type="hidden" name="csrf" value="${esc(session.csrf)}">
         <input type="hidden" name="source" value="${esc(a.source || 'manual')}">
-        <input type="hidden" name="traits" id="traitsField" value="${esc(JSON.stringify(a.traits || []))}">
         <input type="hidden" name="photosJson" id="photosField" value="${esc(JSON.stringify(photos))}">
 
         <div class="split">
@@ -326,28 +325,28 @@ ${personalData ? `              <label><span class="lbl">Имя опекуна</
     e.target.value='';
   };
 
+  // Фото опекуна есть только там, где разрешены персональные данные.
+  // Без этих проверок скрипт падал и переставал сохранять признаки и фотографии.
   var patronThumb = document.getElementById('patronThumb');
   var patronField = document.getElementById('patronPhotoField');
+  var patronPick = document.getElementById('patronPick');
+  var patronFile = document.getElementById('patronFile');
   function renderPatron(){
+    if(!patronThumb || !patronField) return;
     patronThumb.innerHTML = patronField.value
       ? '<div class="thumb"><img src="'+patronField.value+'" alt=""><button type="button" id="patronDel" title="Убрать">×</button></div>' : '';
     var d = document.getElementById('patronDel');
     if(d) d.onclick = function(){ patronField.value=''; renderPatron(); };
   }
-  document.getElementById('patronPick').onclick = function(){ document.getElementById('patronFile').click(); };
-  document.getElementById('patronFile').onchange = async function(e){
-    if(!e.target.files[0]) return;
-    try { var j = await upload(e.target.files[0]); patronField.value = j.src; renderPatron(); }
-    catch(err){ alert('Не удалось загрузить: '+err.message); }
-    e.target.value='';
-  };
-
-  // В названиях признаков есть пробелы, поэтому передаём их одним полем как JSON.
-  var form = document.getElementById('animalForm');
-  form.addEventListener('submit', function(){
-    var checked = Array.from(form.querySelectorAll('input[name=traitBox]:checked')).map(function(c){return c.value;});
-    document.getElementById('traitsField').value = JSON.stringify(checked);
-  });
+  if(patronPick && patronFile){
+    patronPick.onclick = function(){ patronFile.click(); };
+    patronFile.onchange = async function(e){
+      if(!e.target.files[0]) return;
+      try { var j = await upload(e.target.files[0]); patronField.value = j.src; renderPatron(); }
+      catch(err){ alert('Не удалось загрузить: '+err.message); }
+      e.target.value='';
+    };
+  }
 
   renderPhotos();
   renderPatron();
